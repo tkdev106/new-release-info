@@ -60,6 +60,10 @@
 
     <string name="notif_channel">新譜</string>
     <string name="notif_channel_desc">登録したアーティストの新譜</string>
+    <string name="notif_channel_tips">お知らせ</string>
+    <string name="notif_channel_tips_desc">アプリの使い方のおすすめ</string>
+    <string name="plays_prompt_title">%1$sなどの新譜情報の通知を受け取りませんか？</string>
+    <string name="plays_prompt_text">よく聴くアーティストを登録すると、新譜の情報が公開されたときにプッシュ通知でお知らせします。</string>
     <string name="notif_title_released">%1$sの新譜がリリースされました</string>
     <string name="notif_title_upcoming">%1$sの新譜がリリースされます</string>
     <string name="notif_text">「%1$s」%2$s · %3$s</string>

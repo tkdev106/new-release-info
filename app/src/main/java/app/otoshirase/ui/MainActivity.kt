@@ -52,6 +52,7 @@ import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
+import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.widget.ReleaseWidget
 import app.otoshirase.work.CheckWorker
 import app.otoshirase.work.Checker
@@ -68,7 +69,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= 33) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
-        setContent { AppTheme { Root() } }
+        // 通知から開いたときは、その通知に関係する画面から始める
+        val start = Tab.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_TAB) } ?: Tab.Releases
+        setContent { AppTheme { Root(start) } }
+    }
+
+    companion object {
+        private const val EXTRA_TAB = "tab"
+
+        fun playsIntent(ctx: android.content.Context): Intent =
+            Intent(ctx, MainActivity::class.java)
+                .putExtra(EXTRA_TAB, Tab.Plays.name)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 }
 
@@ -79,10 +91,10 @@ private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
 }
 
 @Composable
-private fun Root() {
+private fun Root(start: Tab) {
     val ctx = LocalContext.current
     val state by Store.state.collectAsState()
-    var tab by rememberSaveable { mutableStateOf(Tab.Releases) }
+    var tab by rememberSaveable { mutableStateOf(start) }
     var searchFor by remember { mutableStateOf<String?>(null) }
 
     val work by WorkManager.getInstance(ctx)
@@ -121,9 +133,7 @@ private fun Root() {
             when (tab) {
                 Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
                 Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
-                Tab.Plays -> PlaysScreen(state.plays.filter { p ->
-                    p.name !in state.ignored && state.artists.none { it.matches(p.name) }
-                }, onAdd = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
+                Tab.Plays -> PlaysScreen(state.unregisteredPlays(), onAdd = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
             }
         }
     }

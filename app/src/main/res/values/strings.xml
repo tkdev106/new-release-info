@@ -68,6 +68,10 @@
 
     <string name="notif_channel">New releases</string>
     <string name="notif_channel_desc">New releases from your artists</string>
+    <string name="notif_channel_tips">Tips</string>
+    <string name="notif_channel_tips_desc">Suggestions for using the app</string>
+    <string name="plays_prompt_title">Get notified about new releases from %1$s and more?</string>
+    <string name="plays_prompt_text">Add the artists you play most, and we\'ll notify you when they announce new music.</string>
     <string name="notif_title_released">New release from %1$s</string>
     <string name="notif_title_upcoming">Upcoming release from %1$s</string>
     <string name="notif_text">%1$s · %2$s · %3$s</string>
