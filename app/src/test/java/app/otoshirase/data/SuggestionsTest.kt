@@ -19,7 +19,6 @@ class SuggestionsTest {
 
     private class FakeCatalog(
         private val artists: List<CatalogArtist>,
-        private val withReleases: Set<Long> = artists.map { it.id }.toSet(),
         private val broken: Set<String> = emptySet(),
     ) : ArtistCatalog {
         var calls = 0
@@ -29,7 +28,6 @@ class SuggestionsTest {
             // iTunes の検索と同じく、部分一致も返す
             return artists.filter { normalizeArtistName(it.name).contains(normalizeArtistName(term)) }
         }
-        override suspend fun hasReleases(artistId: Long): Boolean { calls++; return artistId in withReleases }
     }
 
     private fun artist(id: Long, name: String, aliases: List<String> = emptyList()) = Artist(id, name, aliases = aliases)
@@ -60,9 +58,29 @@ class SuggestionsTest {
     }
 
     @Test
-    fun `作品が無いアーティストは採用しない`() = runBlocking {
-        val catalog = FakeCatalog(listOf(cat(40, "Empty")), withReleases = emptySet())
-        assertEquals(emptyList<Suggestion>(), finder(FakeSource(listOf("Empty")), catalog).find(liked, emptyList(), emptySet()))
+    fun `一度引いた候補は期限内なら問い合わせずに使い、見つからなかったことも覚える`() = runBlocking {
+        val day = 24L * 60 * 60 * 1000
+        val catalog = FakeCatalog(listOf(cat(70, "New")))
+        val known = mapOf(
+            normalizeArtistName("Cached") to CatalogLookup(71, "Cached", "Rock", null, checkedAt = 0),
+            normalizeArtistName("Missing") to CatalogLookup(null, checkedAt = 0),
+            normalizeArtistName("Old") to CatalogLookup(72, "Old", null, null, checkedAt = -31 * day),
+        )
+        val looked = mutableMapOf<String, CatalogLookup>()
+        val f = SuggestionFinder(FakeSource(listOf("Cached", "Missing", "Old", "New")), catalog, gapMs = 0, pause = {}, now = { day })
+        val out = f.find(liked, emptyList(), emptySet(), known = known, onLookup = { k, v -> looked[k] = v })
+        assertEquals(listOf(71L, 70L), out.map { it.artistId })
+        assertEquals(2, catalog.calls) // Old（期限切れ）と New だけ問い合わせる
+        assertEquals(setOf(normalizeArtistName("Old"), normalizeArtistName("New")), looked.keys)
+        assertEquals(null, looked[normalizeArtistName("Old")]!!.artistId)
+    }
+
+    @Test
+    fun `確かめるたびにそれまでに見つかった分を知らせる`() = runBlocking {
+        val catalog = FakeCatalog(listOf(cat(40, "A"), cat(41, "B")))
+        val seen = mutableListOf<List<Long>>()
+        finder(FakeSource(listOf("A", "存在しない", "B")), catalog).find(liked, emptyList(), emptySet()) { seen += it.map { s -> s.artistId } }
+        assertEquals(listOf(listOf(40L), listOf(40L, 41L)), seen)
     }
 
     @Test
@@ -89,7 +107,7 @@ class SuggestionsTest {
         val catalog = FakeCatalog(many)
         val out = finder(FakeSource(many.map { it.name }), catalog).find(liked, emptyList(), emptySet(), limit = 3)
         assertEquals(3, out.size)
-        assertEquals(6, catalog.calls)
+        assertEquals(3, catalog.calls)
     }
 
     @Test

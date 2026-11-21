@@ -13,7 +13,6 @@ interface SuggestionSource {
 /** おすすめが実在するかを確かめる側（Apple のカタログ） */
 interface ArtistCatalog {
     suspend fun searchArtists(term: String): List<CatalogArtist>
-    suspend fun hasReleases(artistId: Long): Boolean
 }
 
 data class CatalogArtist(val id: Long, val name: String, val genre: String?, val url: String?)
@@ -32,12 +31,19 @@ class SuggestionFinder(
     /** iTunes Search API の目安（20 回/分）を超えないための間隔 */
     private val gapMs: Long = 3_200,
     private val pause: suspend (Long) -> Unit = { delay(it) },
+    private val now: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun find(
         liked: List<Artist>,
         ignored: List<String>,
         dismissed: Set<Long>,
         limit: Int = MAX_SHOWN,
+        /** 前に引いた結果。期限内のものは問い合わせずに使う */
+        known: Map<String, CatalogLookup> = emptyMap(),
+        /** 新しく問い合わせた結果。呼び出し側が保存する */
+        onLookup: (String, CatalogLookup) -> Unit = { _, _ -> },
+        /** 1 件確かめるたびに、それまでに見つかった分を渡す。全部終わるのを待たずに出すため */
+        onFound: (List<Suggestion>) -> Unit = {},
     ): List<Suggestion> {
         if (liked.isEmpty()) return emptyList()
         val candidates = source.suggest(liked.map { it.name }.take(MAX_SENT))
@@ -61,12 +67,20 @@ class SuggestionFinder(
             if (found.size >= limit) break
             val key = normalizeArtistName(name)
             if (key.isEmpty() || key in excludedNames) continue
-            val hits = lookup { catalog.searchArtists(name) } ?: continue
-            // 部分一致や「いちばん上の結果」は別人を拾うので、完全に一致するものだけ
-            val match = hits.firstOrNull { normalizeArtistName(it.name) == key } ?: continue
+            val cached = known[key]?.takeIf { now() - it.checkedAt < LOOKUP_TTL_MS }
+            val match = if (cached != null) {
+                cached.artistId?.let { CatalogArtist(it, cached.name.orEmpty(), cached.genre, cached.url) }
+            } else {
+                val hits = lookup { catalog.searchArtists(name) } ?: continue // 失敗は覚えない
+                // 部分一致や「いちばん上の結果」は別人を拾うので、完全に一致するものだけ
+                hits.firstOrNull { normalizeArtistName(it.name) == key }.also { m ->
+                    onLookup(key, CatalogLookup(m?.id, m?.name, m?.genre, m?.url, now()))
+                }
+            } ?: continue
             if (match.id in excludedIds || found.any { it.artistId == match.id }) continue
-            if (lookup { catalog.hasReleases(match.id) } != true) continue
+            // 作品の有無までは確かめない。検索に出るアーティストはほぼ作品があり、問い合わせが倍になるため
             found += Suggestion(match.id, match.name, match.genre, match.url)
+            onFound(found.toList())
         }
         return found
     }
@@ -74,6 +88,7 @@ class SuggestionFinder(
     companion object {
         const val MAX_SENT = 30
         const val MAX_SHOWN = 10
+        const val LOOKUP_TTL_MS = 30L * 24 * 60 * 60 * 1000
     }
 }
 

@@ -6,6 +6,4 @@ object AppleArtistCatalog : ArtistCatalog {
         AppleCatalog.searchArtists(term).map {
             CatalogArtist(it.artistId!!, it.artistName.orEmpty(), it.primaryGenreName, it.artistLinkUrl?.substringBefore("?uo="))
         }
-
-    override suspend fun hasReleases(artistId: Long): Boolean = AppleCatalog.albums(artistId).isNotEmpty()
 }

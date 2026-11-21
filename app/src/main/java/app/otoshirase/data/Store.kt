@@ -65,6 +65,14 @@ object Store {
         s.copy(suggestions = list.filterNot { it.artistId in excluded }, suggestionsKey = key, suggestionsAt = at)
     }
 
+    suspend fun saveCatalogLookups(found: Map<String, CatalogLookup>, now: Long) = update { s ->
+        val merged = (s.catalogLookups + found)
+            .filterValues { now - it.checkedAt < SuggestionFinder.LOOKUP_TTL_MS }
+            .entries.sortedByDescending { it.value.checkedAt }.take(1000)
+            .associate { it.key to it.value }
+        s.copy(catalogLookups = merged)
+    }
+
     suspend fun dismissSuggestion(id: Long) = update { s ->
         s.copy(
             suggestions = s.suggestions.filterNot { it.artistId == id },

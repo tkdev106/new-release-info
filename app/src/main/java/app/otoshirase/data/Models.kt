@@ -55,6 +55,16 @@ data class Suggestion(
     val url: String? = null,
 )
 
+/** 候補名を Apple のカタログで引いた結果。同じ候補を何度も問い合わせないため。見つからなければ artistId は null */
+@Serializable
+data class CatalogLookup(
+    val artistId: Long? = null,
+    val name: String? = null,
+    val genre: String? = null,
+    val url: String? = null,
+    val checkedAt: Long = 0,
+)
+
 @Serializable
 data class AppState(
     val artists: List<Artist> = emptyList(),
@@ -72,4 +82,6 @@ data class AppState(
     val suggestionsAt: Long = 0,
     /** 「興味なし」にしたおすすめの artistId。次からも出さない */
     val dismissedSuggestions: List<Long> = emptyList(),
+    /** 正規化した候補名 → カタログで引いた結果 */
+    val catalogLookups: Map<String, CatalogLookup> = emptyMap(),
 )

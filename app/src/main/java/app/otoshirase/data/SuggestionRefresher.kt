@@ -12,6 +12,9 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
     val refreshing: StateFlow<Boolean> = _refreshing
     private val _failed = MutableStateFlow(false)
     val failed: StateFlow<Boolean> = _failed
+    /** 取り直し中に見つかった分。null なら取り直していない（保存済みの結果を出す） */
+    private val _partial = MutableStateFlow<List<Suggestion>?>(null)
+    val partial: StateFlow<List<Suggestion>?> = _partial
 
     suspend fun refreshIfStale() {
         if (!running.compareAndSet(false, true)) return
@@ -22,8 +25,19 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
                 val s = Store.state.value
                 val now = System.currentTimeMillis()
                 if (!SuggestionPolicy.needsRefresh(s, now)) return
-                val list = finder.find(s.artists, s.ignored, s.dismissedSuggestions.toSet())
-                Store.saveSuggestions(list, SuggestionPolicy.key(s.artists), now)
+                _partial.value = emptyList()
+                val looked = mutableMapOf<String, CatalogLookup>()
+                try {
+                    val list = finder.find(
+                        s.artists, s.ignored, s.dismissedSuggestions.toSet(),
+                        known = s.catalogLookups,
+                        onLookup = { k, v -> looked[k] = v },
+                    ) { _partial.value = it }
+                    Store.saveSuggestions(list, SuggestionPolicy.key(s.artists), now)
+                } finally {
+                    // 途中で失敗しても、引けた分は次に使う
+                    if (looked.isNotEmpty()) Store.saveCatalogLookups(looked, now)
+                }
                 _failed.value = false
             }
         } catch (e: CancellationException) {
@@ -31,6 +45,7 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
         } catch (e: Exception) {
             _failed.value = true
         } finally {
+            _partial.value = null
             _refreshing.value = false
             running.set(false)
         }

@@ -381,6 +381,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
     LaunchedEffect(Unit) { refresher?.let { r -> App.scope.launch { r.refreshIfStale() } } }
     val suggesting = refresher?.refreshing?.collectAsState()?.value == true
     val suggestFailed = refresher?.failed?.collectAsState()?.value == true
+    // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
+    val partial = refresher?.partial?.collectAsState()?.value
 
     fun add(id: Long, name: String, genre: String?, url: String?, alias: String?) {
         added += id
@@ -432,13 +434,11 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (query.isBlank() && refresher != null) {
-                    val shown = suggestions.filterNot { it.artistId in registered || it.artistId in added }
+                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added }
                     if (shown.isNotEmpty() || suggesting || suggestFailed) {
                         item { SectionLabel(stringResource(R.string.suggestions)) }
                     }
-                    if (suggesting) item {
-                        Text(stringResource(R.string.suggestions_loading), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-                    } else if (suggestFailed && shown.isEmpty()) item {
+                    if (!suggesting && suggestFailed && shown.isEmpty()) item {
                         Text(stringResource(R.string.suggestions_error), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                     }
                     items(shown, key = { "s" + it.artistId }) { sg ->
@@ -447,6 +447,13 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                                 Icon(Icons.Default.Close, stringResource(R.string.not_interested), Modifier.size(18.dp), tint = c.onSurfaceVariant)
                             }
                             PillButton(stringResource(R.string.add)) { add(sg.artistId, sg.name, sg.genre, sg.url, null) }
+                        }
+                    }
+                    if (suggesting) item(key = "suggesting") {
+                        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = c.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.suggestions_loading), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                         }
                     }
                 }
