@@ -45,6 +45,15 @@ const call = (body, token = "secret", method = "POST") =>
     ctx,
   );
 
+test("LLM の設定が無くてもトークンが違えば先に断る", async () => {
+  const r = await worker.fetch(
+    new Request("https://w.example/v1/suggestions", { method: "POST", headers: { Authorization: "Bearer wrong" }, body: "{}" }),
+    { ...env, GEMINI_API_KEY: "" },
+    ctx,
+  );
+  assert.equal(r.status, 401);
+});
+
 test("トークンが違えば Gemini を呼ばずに断る", async () => {
   assert.equal((await call({ artists: ["a"] }, "wrong")).status, 401);
   assert.equal((await call({ artists: ["a"] }, null)).status, 401);

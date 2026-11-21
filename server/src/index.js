@@ -14,11 +14,13 @@ export default {
     if (url.pathname !== "/v1/suggestions") return json({ error: "not found" }, 404);
     if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
 
-    const provider = createProvider(env);
-    if (!env.APP_TOKEN || !provider) return json({ error: "server not configured" }, 500);
+    if (!env.APP_TOKEN) return json({ error: "server not configured" }, 500);
+    // LLM の設定状況は、トークンを持つ呼び出し側にだけ見せる
     if (!(await tokenMatches(request.headers.get("Authorization"), env.APP_TOKEN))) {
       return json({ error: "unauthorized" }, 401);
     }
+    const provider = createProvider(env);
+    if (!provider) return json({ error: "server not configured" }, 500);
 
     // 回数制限は設定されていれば使う（wrangler.toml の ratelimits）
     if (env.RATE_LIMITER) {
