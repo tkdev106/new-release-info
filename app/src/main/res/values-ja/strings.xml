@@ -28,9 +28,9 @@
     <string name="remove_body">このアーティストの新譜も一覧から消えます。</string>
     <string name="cancel">キャンセル</string>
 
-    <string name="plays_intro_title">よく聴くアーティストを表示します</string>
-    <string name="plays_intro_body">音楽アプリで再生した曲をもとに集計します。通知へのアクセスを許可してください。</string>
-    <string name="allow">許可する</string>
+    <string name="plays_intro_title">アーティストを自動で集める</string>
+    <string name="plays_intro_body">有効にすると、あなたが再生した音楽から\nアーティストを自動で取り込みます。\n次の画面で「通知へのアクセス」を\nオンにしてください。</string>
+    <string name="allow">有効にする</string>
     <string name="plays_empty">音楽を再生すると、ここに表示されます</string>
     <plurals name="play_count">
         <item quantity="other">%d曲</item>

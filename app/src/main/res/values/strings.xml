@@ -31,9 +31,9 @@
     <string name="remove_body">Their releases will also be removed from the list.</string>
     <string name="cancel">Cancel</string>
 
-    <string name="plays_intro_title">See the artists you play most</string>
-    <string name="plays_intro_body">Counted from songs you play in music apps. Allow notification access to start.</string>
-    <string name="allow">Allow</string>
+    <string name="plays_intro_title">Collect your most-played artists</string>
+    <string name="plays_intro_body">Once on, artists are added here automatically from the music you play. Turn on notification access on the next screen.</string>
+    <string name="allow">Turn on</string>
     <string name="plays_empty">Play some music and artists will show up here</string>
     <plurals name="play_count">
         <item quantity="one">%d play</item>
