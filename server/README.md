@@ -7,7 +7,7 @@ LLM の API キーをアプリに入れないために置いている。
 
 本体（`src/index.js`）は `src/llm/provider.js` の `LlmProvider` の形だけを知っている。
 
-- `id`: キャッシュのキー。モデルを変えたら変わる値（例: `gemini:gemini-2.5-flash`）
+- `id`: キャッシュのキー。モデルを変えたら変わる値（例: `gemini:gemini-3.5-flash-lite`）
 - `suggestArtists(prompt)`: `prompt.system`（指示）と `prompt.user`（好きなアーティストの JSON）を渡して候補の配列を返す。失敗は例外
 
 プロンプト（`src/suggest.js` の `buildPrompt`）と出力の検証（`sanitizeSuggestions`）はどの LLM でも共通なので、新しい実装が持つのは API の呼び方と応答の取り出し方だけ。

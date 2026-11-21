@@ -4,7 +4,7 @@ import { MAX_SUGGESTIONS } from "../suggest.js";
 
 const TIMEOUT_MS = 10_000;
 const RETRY_DELAY_MS = 800;
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
 // Gemini の responseSchema は OpenAPI の一部で、型名は大文字
 const RESPONSE_SCHEMA = {

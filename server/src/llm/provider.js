@@ -5,7 +5,7 @@ import { createGeminiProvider } from "./gemini.js";
 
 /**
  * @typedef {object} LlmProvider
- * @property {string} id キャッシュのキーに使う。モデルを変えたら変わるようにする（例: "gemini:gemini-2.5-flash"）
+ * @property {string} id キャッシュのキーに使う。モデルを変えたら変わるようにする（例: "gemini:gemini-3.5-flash-lite"）
  * @property {(prompt: import("../suggest.js").SuggestPrompt) => Promise<unknown>} suggestArtists
  *   候補の名前を返す。戻り値は信用せず、呼び出し側（sanitizeSuggestions）が検証する。
  *   通信の失敗・タイムアウト・形の崩れた応答は例外にする。

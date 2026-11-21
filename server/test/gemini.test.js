@@ -33,7 +33,7 @@ test("キーはヘッダーで送り、指示とデータを分けて構造化�
 
 test("モデル名がキャッシュのキーに入るようにする", () => {
   assert.equal(createGeminiProvider({ apiKey: "k", model: "x" }).id, "gemini:x");
-  assert.equal(createGeminiProvider({ apiKey: "k", model: "" }).id, "gemini:gemini-2.5-flash");
+  assert.equal(createGeminiProvider({ apiKey: "k", model: "" }).id, "gemini:gemini-3.5-flash-lite");
 });
 
 test("一時的な失敗は1回だけやり直す", async () => {
