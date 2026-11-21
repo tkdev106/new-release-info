@@ -1,11 +1,11 @@
 <resources>
     <string name="listener_label">よく聴くアーティスト</string>
-    <string name="widget_label">新譜</string>
+    <string name="widget_label">New Releases</string>
     <string name="widget_desc">登録したアーティストの最新リリース</string>
     <string name="widget_upcoming">%1$s 発売</string>
     <string name="widget_empty">アーティストを登録すると、新譜がここに表示されます</string>
 
-    <string name="tab_releases">新譜</string>
+    <string name="tab_releases">New Releases</string>
     <string name="tab_artists">アーティスト</string>
     <string name="tab_plays">よく聴く</string>
 
