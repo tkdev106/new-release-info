@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
@@ -384,7 +385,10 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
     // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
     val partial = refresher?.partial?.collectAsState()?.value
 
+    val focusManager = LocalFocusManager.current
     fun add(id: Long, name: String, genre: String?, url: String?, alias: String?) {
+        // 一覧が入れ替わる拍子に検索欄へフォーカスが移り、キーボードが出てしまうのを防ぐ
+        focusManager.clearFocus()
         added += id
         val artist = Artist(
             id = id,
@@ -451,7 +455,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                     }
                     if (suggesting) item(key = "suggesting") {
                         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = c.primary)
+                            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp, color = c.primary)
                             Spacer(Modifier.width(12.dp))
                             Text(stringResource(R.string.suggestions_loading), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                         }
