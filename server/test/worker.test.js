@@ -122,6 +122,28 @@ test("回数制限を超えたら断る", async () => {
   assert.equal(geminiCalls, 0);
 });
 
+test("連打を止める制限を超えたら 1 分の枠を使わずに断る", async () => {
+  let minuteCalls = 0;
+  const limited = {
+    ...env,
+    BURST_LIMITER: { limit: async ({ key }) => ({ success: key !== "1.2.3.4" }) },
+    RATE_LIMITER: { limit: async () => (minuteCalls++, { success: true }) },
+  };
+  const r = await worker.fetch(
+    new Request("https://w.example/v1/suggestions", {
+      method: "POST",
+      headers: { Authorization: "Bearer secret", "CF-Connecting-IP": "1.2.3.4" },
+      body: JSON.stringify({ artists: ["a"] }),
+    }),
+    limited,
+    ctx,
+  );
+  assert.equal(r.status, 429);
+  assert.equal(r.headers.get("Retry-After"), "10");
+  assert.equal(minuteCalls, 0);
+  assert.equal(geminiCalls, 0);
+});
+
 test("決まった道以外は受け付けない", async () => {
   assert.equal((await call(null, "secret", "GET")).status, 405);
   const r = await worker.fetch(new Request("https://w.example/other", { method: "POST" }), env, ctx);

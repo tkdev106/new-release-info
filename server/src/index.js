@@ -22,11 +22,14 @@ export default {
     const provider = createProvider(env);
     if (!provider) return json({ error: "server not configured" }, 500);
 
-    // 回数制限は設定されていれば使う（wrangler.toml の ratelimits）
-    if (env.RATE_LIMITER) {
-      const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-      const { success } = await env.RATE_LIMITER.limit({ key: ip });
-      if (!success) return json({ error: "too many requests" }, 429);
+    // 回数制限は設定されていれば使う（wrangler.toml の ratelimits）。
+    // 連打は 10 秒の窓で、長く続く呼び出しは 1 分の窓で止める。片方だけだと、
+    // 1 分 10 回の枠を数秒で使い切る連打を最初の数回で止められないため
+    const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+    for (const [limiter, period] of [[env.BURST_LIMITER, "10"], [env.RATE_LIMITER, "60"]]) {
+      if (!limiter) continue;
+      const { success } = await limiter.limit({ key: ip });
+      if (!success) return json({ error: "too many requests" }, 429, { "Retry-After": period });
     }
 
     const raw = await request.text();

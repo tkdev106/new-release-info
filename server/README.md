@@ -31,7 +31,7 @@ Content-Type: application/json
 | 200 | `{"suggestions": ["never young beach", ...]}`（最大 15 件。入力に含まれる名前は除いてある） |
 | 400 / 413 | 入力が不正・大きすぎる |
 | 401 | トークンが違う |
-| 429 | 回数制限（1 IP あたり 1 分 10 回） |
+| 429 | 回数制限（1 IP あたり 10 秒 2 回・1 分 10 回）。`Retry-After` 秒待てばよい |
 | 502 | `{"suggestions": [], "error": "upstream unavailable"}`。Gemini が失敗・タイムアウト |
 
 呼び出し側は 200 以外をすべて「今は提案なし」として扱えばよい。Android 以外（将来の iOS など）からも同じ形で呼べる。
