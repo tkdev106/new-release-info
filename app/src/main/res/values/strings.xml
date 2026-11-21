@@ -8,7 +8,7 @@
 
     <string name="tab_releases">New Releases</string>
     <string name="tab_artists">Artists</string>
-    <string name="tab_plays">Most played</string>
+    <string name="tab_plays">Most Played</string>
 
     <string name="checking">Checking…</string>
     <string name="checked_never">Not checked yet</string>

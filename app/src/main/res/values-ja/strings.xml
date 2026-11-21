@@ -5,9 +5,6 @@
     <string name="widget_upcoming">%1$s 発売</string>
     <string name="widget_empty">アーティストを登録すると、新譜がここに表示されます</string>
 
-    <string name="tab_releases">New Releases</string>
-    <string name="tab_artists">アーティスト</string>
-    <string name="tab_plays">よく聴く</string>
 
     <string name="checking">確認中…</string>
     <string name="checked_never">未確認</string>
