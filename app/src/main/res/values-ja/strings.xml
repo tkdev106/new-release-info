@@ -65,9 +65,8 @@
     <string name="notif_text">「%1$s」%2$s · %3$s</string>
     <string name="notif_summary">新譜 %d件</string>
 
-    <string name="suggestions">おすすめ</string>
+    <string name="suggestions">AI のおすすめ</string>
     <string name="suggestions_loading">おすすめを探しています…</string>
     <string name="suggestions_error">いまはおすすめを表示できません</string>
-    <string name="suggestions_note">AI の提案を Apple Music で確かめて表示しています</string>
     <string name="not_interested">興味なし</string>
 </resources>

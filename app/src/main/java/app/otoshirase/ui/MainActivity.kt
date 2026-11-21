@@ -447,9 +447,6 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                             PillButton(stringResource(R.string.add)) { add(sg.artistId, sg.name, sg.genre, sg.url, null) }
                         }
                     }
-                    if (shown.isNotEmpty()) item {
-                        Text(stringResource(R.string.suggestions_note), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
-                    }
                 }
                 items(results, key = { it.artistId!! }) { item ->
                     val id = item.artistId!!
