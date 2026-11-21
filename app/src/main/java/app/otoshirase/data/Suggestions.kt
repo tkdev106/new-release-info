@@ -91,16 +91,3 @@ class SuggestionFinder(
         const val LOOKUP_TTL_MS = 30L * 24 * 60 * 60 * 1000
     }
 }
-
-/** いつ取り直すか。登録が変わったらすぐ、変わらなければ 7 日ごと */
-object SuggestionPolicy {
-    const val FRESH_MS = 7L * 24 * 60 * 60 * 1000
-
-    fun key(liked: List<Artist>): String = liked.map { it.id }.sorted().joinToString(",")
-
-    fun needsRefresh(state: AppState, now: Long): Boolean {
-        if (state.artists.isEmpty()) return false
-        if (state.suggestionsKey != key(state.artists)) return true
-        return now - state.suggestionsAt >= FRESH_MS
-    }
-}
