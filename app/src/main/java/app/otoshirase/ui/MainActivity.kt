@@ -49,10 +49,10 @@ import app.otoshirase.App
 import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
+import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
-import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.widget.ReleaseWidget
 import app.otoshirase.work.CheckWorker
 import app.otoshirase.work.Checker
