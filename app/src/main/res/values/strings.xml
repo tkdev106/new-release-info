@@ -1,6 +1,5 @@
 <resources>
-    <!-- 名前は未決定。決まるまで暫定 -->
-    <string name="app_name" translatable="false">オトシラセ</string>
+    <string name="app_name" translatable="false">New Releases</string>
     <string name="listener_label">Most played artists</string>
     <string name="widget_label">New releases</string>
     <string name="widget_desc">Latest releases from your artists</string>

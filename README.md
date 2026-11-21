@@ -1,6 +1,6 @@
 # new-release-info
 
-新譜通知 Android アプリ「オトシラセ」。
+新譜通知 Android アプリ「New Releases」。
 
 登録したアーティストの新譜（アルバム・EP・シングル、発売予定を含む）を通知する Android アプリ。
 
