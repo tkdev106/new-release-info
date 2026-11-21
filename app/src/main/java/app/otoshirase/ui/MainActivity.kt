@@ -48,6 +48,7 @@ import androidx.work.WorkManager
 import app.otoshirase.App
 import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
+import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
@@ -319,7 +320,10 @@ private fun PlaysScreen(plays: List<PlayStat>, onAdd: (String) -> Unit, onIgnore
     }
     LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
         items(plays, key = { it.name }) { p ->
-            PersonRow(p.name, "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}") {
+            PersonRow(
+                p.name, "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}",
+                image = artistImageByName(p.name),
+            ) {
                 IconButton(onClick = { onIgnore(p.name) }) {
                     Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -328,6 +332,14 @@ private fun PlaysScreen(plays: List<PlayStat>, onAdd: (String) -> Unit, onIgnore
         }
     }
 }
+
+@Composable
+private fun artistImageById(id: Long): String? =
+    produceState(ArtistImages.peek(id), id) { value = ArtistImages.cached(id) }.value
+
+@Composable
+private fun artistImageByName(name: String): String? =
+    produceState<String?>(null, name) { value = ArtistImages.forName(name) }.value
 
 private fun listenerGranted(ctx: android.content.Context) =
     NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
@@ -394,7 +406,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
                 items(results, key = { it.artistId!! }) { item ->
                     val id = item.artistId!!
                     val done = id in registered || id in added
-                    PersonRow(item.artistName.orEmpty(), item.primaryGenreName) {
+                    PersonRow(item.artistName.orEmpty(), item.primaryGenreName, image = artistImageById(id)) {
                         if (done) {
                             Text(stringResource(R.string.added), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
                         } else PillButton(stringResource(R.string.add)) {
@@ -405,6 +417,9 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
                                 genre = item.primaryGenreName,
                                 url = item.artistLinkUrl?.substringBefore("?uo="),
                                 aliases = listOf(initial).filter { it.isNotBlank() },
+                                // 検索結果で取れていれば、登録時に取り直さない
+                                image = ArtistImages.peek(id),
+                                imageCheckedAt = if (ArtistImages.peek(id) != null) System.currentTimeMillis() else 0,
                             )
                             App.scope.launch {
                                 Store.addArtist(artist)

@@ -3,6 +3,7 @@ package app.otoshirase.data
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * アーティスト画像を Apple Music の公開ページ（og:image）から取る。
@@ -32,6 +33,29 @@ object ArtistImages {
                 parse(head)?.let { square(it) }
             }
         }.getOrNull()
+    }
+
+    // 検索結果や Most Played は同じアーティストを何度も描くので、アプリを開いている間は結果を覚えておく
+    private val byId = ConcurrentHashMap<Long, String>()     // 取れなかったものは空文字
+    private val idByName = ConcurrentHashMap<String, Long>() // 見つからなかったものは -1
+
+    /** 覚えている画像。まだ取りに行っていなければ null */
+    fun peek(artistId: Long): String? = byId[artistId]?.ifEmpty { null }
+
+    suspend fun cached(artistId: Long): String? {
+        byId[artistId]?.let { return it.ifEmpty { null } }
+        return fetch(artistId).also { byId[artistId] = it.orEmpty() }
+    }
+
+    /** 名前しか分からないアーティスト（再生履歴から集めたもの）の画像。カタログで名前が完全に一致したときだけ使う */
+    suspend fun forName(name: String): String? {
+        val key = name.trim().lowercase()
+        val id = idByName[key] ?: run {
+            // 通信に失敗したときは覚えず、次に描くときに取り直す
+            val hits = runCatching { AppleCatalog.searchArtists(name.trim()) }.getOrNull() ?: return null
+            (hits.firstOrNull { it.artistName?.trim()?.lowercase() == key }?.artistId ?: -1L).also { idByName[key] = it }
+        }
+        return if (id < 0) null else cached(id)
     }
 
     private const val HEAD_BYTES = 160_000L
