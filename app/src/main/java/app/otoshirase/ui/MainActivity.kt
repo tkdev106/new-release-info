@@ -33,6 +33,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import app.otoshirase.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,10 +72,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String, val icon: ImageVector) {
-    Releases("新譜", Icons.Default.Notifications),
-    Artists("アーティスト", Icons.Default.Person),
-    Plays("よく聴く", Icons.Default.Favorite),
+private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
+    Releases(R.string.tab_releases, Icons.Default.Notifications),
+    Artists(R.string.tab_artists, Icons.Default.Person),
+    Plays(R.string.tab_plays, Icons.Default.Favorite),
 }
 
 @Composable
@@ -89,18 +93,18 @@ private fun Root() {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Header(
-                title = tab.label,
+                title = stringResource(tab.label),
                 subtitle = when (tab) {
-                    Tab.Releases -> if (checking) "確認中…" else checkedLabel(state.lastCheck)
-                    Tab.Artists -> "${state.artists.size}組"
+                    Tab.Releases -> if (checking) stringResource(R.string.checking) else checkedLabel(ctx, state.lastCheck)
+                    Tab.Artists -> pluralStringResource(R.plurals.artist_count, state.artists.size, state.artists.size)
                     Tab.Plays -> null
                 },
             ) {
                 when (tab) {
-                    Tab.Releases -> CircleButton(Icons.Default.Refresh, "今すぐ確認", enabled = !checking && state.artists.isNotEmpty()) {
+                    Tab.Releases -> CircleButton(Icons.Default.Refresh, stringResource(R.string.check_now), enabled = !checking && state.artists.isNotEmpty()) {
                         CheckWorker.runNow(ctx)
                     }
-                    Tab.Artists -> CircleButton(Icons.Default.Add, "追加") { searchFor = "" }
+                    Tab.Artists -> CircleButton(Icons.Default.Add, stringResource(R.string.add_artist)) { searchFor = "" }
                     Tab.Plays -> {}
                 }
             }
@@ -111,7 +115,7 @@ private fun Root() {
             if (checking && tab == Tab.Releases) {
                 LinearProgressIndicator(
                     Modifier.fillMaxWidth().height(1.dp),
-                    color = MaterialTheme.colorScheme.onSurface, trackColor = Color.Transparent,
+                    color = MaterialTheme.colorScheme.primary, trackColor = Color.Transparent,
                 )
             }
             when (tab) {
@@ -136,10 +140,10 @@ private fun Header(title: String, subtitle: String?, actions: @Composable RowSco
         verticalAlignment = Alignment.Bottom,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = Display, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onSurface)
             if (subtitle != null) {
-                Spacer(Modifier.height(6.dp))
-                Text(subtitle, style = Meta, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(4.dp))
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
@@ -153,21 +157,21 @@ private fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
     val pill = RoundedCornerShape(50)
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 8.dp, bottom = 12.dp), contentAlignment = Alignment.Center) {
         Row(
-            Modifier.clip(pill).background(c.surfaceContainerLow).border(1.dp, c.outlineVariant, pill).padding(4.dp),
+            Modifier.clip(pill).background(c.surfaceContainer).padding(4.dp),
         ) {
             Tab.entries.forEach { t ->
                 val selected = t == current
                 Row(
                     Modifier.clip(pill)
-                        .background(if (selected) c.onSurface else Color.Transparent)
+                        .background(if (selected) c.secondaryContainer else Color.Transparent)
                         .clickable { onSelect(t) }
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val tint = if (selected) c.surface else c.onSurfaceVariant
+                    val tint = if (selected) c.onSecondaryContainer else c.onSurfaceVariant
                     Icon(t.icon, null, Modifier.size(18.dp), tint = tint)
                     Spacer(Modifier.width(6.dp))
-                    Text(t.label, style = MaterialTheme.typography.labelLarge, color = tint)
+                    Text(stringResource(t.label), style = MaterialTheme.typography.labelLarge, color = tint)
                 }
             }
         }
@@ -180,18 +184,18 @@ private fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
 private fun ReleasesScreen(releases: List<Release>, hasArtists: Boolean, addArtist: () -> Unit) {
     val ctx = LocalContext.current
     if (releases.isEmpty()) {
-        if (hasArtists) Empty("新しいリリースはまだありません", null)
-        else Empty("アーティストを登録すると\n新譜がここに届きます", "アーティストを追加" to addArtist)
+        if (hasArtists) Empty(stringResource(R.string.releases_empty), null)
+        else Empty(stringResource(R.string.releases_empty_no_artists), stringResource(R.string.add_artist) to addArtist)
         return
     }
     val (upcoming, out) = releases.partition { it.upcoming }
     LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
         if (upcoming.isNotEmpty()) {
-            item { SectionLabel("発売予定") }
+            item { SectionLabel(stringResource(R.string.section_upcoming)) }
             items(upcoming, key = { it.id }) { ReleaseRow(it) { open(ctx, it.url) } }
         }
         if (out.isNotEmpty()) {
-            item { SectionLabel("最近のリリース") }
+            item { SectionLabel(stringResource(R.string.section_recent)) }
             items(out, key = { it.id }) { ReleaseRow(it) { open(ctx, it.url) } }
         }
     }
@@ -199,12 +203,13 @@ private fun ReleasesScreen(releases: List<Release>, hasArtists: Boolean, addArti
 
 @Composable
 private fun SectionLabel(text: String) = Text(
-    text, style = Meta, color = MaterialTheme.colorScheme.onSurfaceVariant,
+    text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
     modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
 )
 
 @Composable
 private fun ReleaseRow(r: Release, onClick: () -> Unit) {
+    val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 10.dp),
@@ -223,12 +228,12 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
             Text(r.artistName, style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${r.kind} · ${shortDate(r)}", style = Meta, color = c.onSurfaceVariant)
+                Text("${kindLabel(ctx, r.kind)} · ${shortDate(ctx, r)}", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
                 if (r.notified) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "NEW", style = Meta, color = c.surface,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).background(c.onSurface).padding(horizontal = 6.dp, vertical = 1.dp),
+                        stringResource(R.string.badge_new), style = MaterialTheme.typography.labelSmall, color = c.onPrimary,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(c.primary).padding(horizontal = 6.dp, vertical = 1.dp),
                     )
                 }
             }
@@ -243,14 +248,14 @@ private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
     val ctx = LocalContext.current
     var confirm by remember { mutableStateOf<Artist?>(null) }
     if (artists.isEmpty()) {
-        Empty("まだ登録がありません", "アーティストを追加" to onAdd)
+        Empty(stringResource(R.string.artists_empty), stringResource(R.string.add_artist) to onAdd)
         return
     }
     LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
         items(artists.sortedBy { it.name.lowercase() }, key = { it.id }) { a ->
             PersonRow(a.name, a.genre, onClick = { open(ctx, a.url) }) {
                 IconButton(onClick = { confirm = a }) {
-                    Icon(Icons.Default.Close, "削除", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -258,15 +263,15 @@ private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
     confirm?.let { a ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text("${a.name} を削除しますか？") },
-            text = { Text("このアーティストの新譜も一覧から消えます。") },
+            title = { Text(stringResource(R.string.remove_title, a.name)) },
+            text = { Text(stringResource(R.string.remove_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     App.scope.launch { Store.removeArtist(a.id); ReleaseWidget().updateAll(ctx) }
                     confirm = null
-                }) { Text("削除") }
+                }) { Text(stringResource(R.string.remove)) }
             },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text("キャンセル") } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -285,7 +290,7 @@ private fun PersonRow(name: String, detail: String?, onClick: (() -> Unit)? = nu
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (detail != null) Text(detail, style = Meta, color = c.onSurfaceVariant, maxLines = 1)
+            if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, maxLines = 1)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), content = trailing)
     }
@@ -301,22 +306,23 @@ private fun PlaysScreen(plays: List<PlayStat>, onAdd: (String) -> Unit, onIgnore
 
     if (!granted) {
         Empty(
-            "再生中の曲から\nよく聴くアーティストを集めます\n（データは端末の外に送りません）",
-            "通知へのアクセスを許可" to { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+            stringResource(R.string.plays_intro_body),
+            stringResource(R.string.allow) to { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+            title = stringResource(R.string.plays_intro_title),
         )
         return
     }
     if (plays.isEmpty()) {
-        Empty("音楽を再生すると、ここに並びます", null)
+        Empty(stringResource(R.string.plays_empty), null)
         return
     }
     LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
         items(plays, key = { it.name }) { p ->
-            PersonRow(p.name, "${p.count}曲 · ${agoLabel(p.lastPlayed)}") {
+            PersonRow(p.name, "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}") {
                 IconButton(onClick = { onIgnore(p.name) }) {
-                    Icon(Icons.Default.Close, "非表示", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                PillButton("登録") { onAdd(p.name) }
+                PillButton(stringResource(R.string.add)) { onAdd(p.name) }
             }
         }
     }
@@ -335,21 +341,21 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
     var query by remember { mutableStateOf(initial) }
     var results by remember { mutableStateOf<List<AppleCatalog.Item>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf(false) }
     val added = remember { mutableStateListOf<Long>() }
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(query) {
-        if (query.isBlank()) { results = emptyList(); error = null; return@LaunchedEffect }
+        if (query.isBlank()) { results = emptyList(); error = false; return@LaunchedEffect }
         delay(400)
-        loading = true; error = null
+        loading = true; error = false
         try {
             results = AppleCatalog.searchArtists(query.trim())
         } catch (e: CancellationException) {
             // 入力が変わって前の検索が打ち切られただけなので、エラーにしない
             throw e
         } catch (e: Exception) {
-            error = "検索できませんでした。通信状況を確認してください。"
+            error = true
         } finally {
             loading = false
         }
@@ -364,33 +370,33 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
         Column(Modifier.padding(horizontal = 24.dp).fillMaxHeight(0.85f)) {
             val pill = RoundedCornerShape(50)
             Row(
-                Modifier.fillMaxWidth().clip(pill).border(1.dp, c.outline, pill).padding(horizontal = 16.dp, vertical = 14.dp),
+                Modifier.fillMaxWidth().clip(pill).background(c.surfaceContainerHigh).padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Default.Search, null, Modifier.size(20.dp), tint = c.onSurfaceVariant)
                 Spacer(Modifier.width(12.dp))
                 Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text("アーティスト名", style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
+                    if (query.isEmpty()) Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
                     BasicTextField(
                         value = query, onValueChange = { query = it }, singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.onSurface),
-                        cursorBrush = SolidColor(c.onSurface),
+                        cursorBrush = SolidColor(c.primary),
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
                     )
                 }
             }
             Box(Modifier.fillMaxWidth().height(2.dp).padding(horizontal = 24.dp)) {
-                if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().height(1.dp), color = c.onSurface, trackColor = Color.Transparent)
+                if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().height(1.dp), color = c.primary, trackColor = Color.Transparent)
             }
-            error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp)) }
+            if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 items(results, key = { it.artistId!! }) { item ->
                     val id = item.artistId!!
                     val done = id in registered || id in added
                     PersonRow(item.artistName.orEmpty(), item.primaryGenreName) {
                         if (done) {
-                            Text("登録済み", style = Meta, color = c.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
-                        } else PillButton("登録") {
+                            Text(stringResource(R.string.added), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+                        } else PillButton(stringResource(R.string.add)) {
                             added += id
                             val artist = Artist(
                                 id = id,
@@ -415,11 +421,15 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
 // ---------------- 共通 ----------------
 
 @Composable
-private fun Empty(message: String, action: Pair<String, () -> Unit>?) {
+private fun Empty(message: String, action: Pair<String, () -> Unit>?, title: String? = null) {
     Column(
         Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (title != null) {
+            Text(title, textAlign = TextAlign.Center, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.height(8.dp))
+        }
         Text(
             message, textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,

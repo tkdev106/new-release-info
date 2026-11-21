@@ -1,0 +1,62 @@
+<resources>
+    <string name="listener_label">よく聴くアーティスト</string>
+    <string name="widget_label">新譜</string>
+    <string name="widget_desc">登録したアーティストの最新リリース</string>
+    <string name="widget_empty">アーティストを登録すると、新譜がここに表示されます</string>
+
+    <string name="tab_releases">新譜</string>
+    <string name="tab_artists">アーティスト</string>
+    <string name="tab_plays">よく聴く</string>
+
+    <string name="checking">確認中…</string>
+    <string name="checked_never">未確認</string>
+    <string name="checked_ago">最終確認 %1$s</string>
+    <string name="check_now">今すぐ確認</string>
+    <plurals name="artist_count">
+        <item quantity="other">%d組</item>
+    </plurals>
+
+    <string name="releases_empty">新しいリリースはまだありません</string>
+    <string name="releases_empty_no_artists">アーティストを登録すると\n新譜がここに表示されます</string>
+    <string name="add_artist">アーティストを追加</string>
+    <string name="section_upcoming">発売予定</string>
+    <string name="section_recent">最近のリリース</string>
+
+    <string name="artists_empty">まだ登録がありません</string>
+    <string name="remove">削除</string>
+    <string name="remove_title">%1$s を削除しますか？</string>
+    <string name="remove_body">このアーティストの新譜も一覧から消えます。</string>
+    <string name="cancel">キャンセル</string>
+
+    <string name="plays_intro_title">よく聴くアーティストを表示します</string>
+    <string name="plays_intro_body">音楽アプリで再生した曲をもとに集計します。通知へのアクセスを許可してください。</string>
+    <string name="allow">許可する</string>
+    <string name="plays_empty">音楽を再生すると、ここに表示されます</string>
+    <plurals name="play_count">
+        <item quantity="other">%d曲</item>
+    </plurals>
+    <string name="hide">非表示</string>
+
+    <string name="add">登録</string>
+    <string name="added">登録済み</string>
+    <string name="search_hint">アーティスト名</string>
+    <string name="search_error">検索できませんでした。通信状況を確認してください。</string>
+
+    <string name="kind_single">シングル</string>
+    <string name="kind_album">アルバム</string>
+
+    <string name="date_unknown">日付不明</string>
+    <string name="today">今日</string>
+    <string name="date_upcoming">%1$s 発売予定</string>
+    <string name="date_today">今日リリース</string>
+    <string name="date_released">%1$s リリース</string>
+    <string name="ago_now">たった今</string>
+    <string name="ago_min">%d分前</string>
+    <string name="ago_hour">%d時間前</string>
+    <string name="ago_day">%d日前</string>
+
+    <string name="notif_channel">新譜</string>
+    <string name="notif_channel_desc">登録したアーティストの新譜</string>
+    <string name="notif_title">%1$s「%2$s」</string>
+    <string name="notif_summary">新譜 %d件</string>
+</resources>

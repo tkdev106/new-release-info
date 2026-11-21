@@ -31,34 +31,32 @@ import androidx.glance.text.TextStyle
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
 import app.otoshirase.ui.MainActivity
-import app.otoshirase.ui.DarkScheme
-import app.otoshirase.ui.LightScheme
+import app.otoshirase.R
 import app.otoshirase.ui.dateLabel
-import androidx.glance.material3.ColorProviders
-import androidx.glance.text.FontFamily
+import app.otoshirase.ui.kindLabel
 
 class ReleaseWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         Store.init(context)
         val releases = Store.state.value.releases.take(10)
-        provideContent { GlanceTheme(colors = ColorProviders(light = LightScheme, dark = DarkScheme)) { Content(releases) } }
+        provideContent { GlanceTheme { Content(context, releases) } }
     }
 
     @Composable
-    private fun Content(releases: List<Release>) {
+    private fun Content(context: Context, releases: List<Release>) {
         val c = GlanceTheme.colors
         Column(
-            GlanceModifier.fillMaxSize().background(c.background).cornerRadius(20.dp).padding(14.dp)
+            GlanceModifier.fillMaxSize().background(c.widgetBackground).cornerRadius(20.dp).padding(14.dp)
         ) {
             Text(
-                "新譜",
-                style = TextStyle(color = c.onSurface, fontFamily = FontFamily.Serif, fontSize = 20.sp),
+                context.getString(R.string.widget_label),
+                style = TextStyle(color = c.primary, fontWeight = FontWeight.Medium, fontSize = 16.sp),
                 modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()),
             )
             Spacer(GlanceModifier.height(6.dp))
             if (releases.isEmpty()) {
                 Text(
-                    "アーティストを登録すると、新譜がここに出ます",
+                    context.getString(R.string.widget_empty),
                     style = TextStyle(color = c.onSurfaceVariant, fontSize = 12.sp),
                     modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()),
                 )
@@ -76,8 +74,8 @@ class ReleaseWidget : GlanceAppWidget() {
                                 style = TextStyle(color = c.onSurface, fontWeight = FontWeight.Medium, fontSize = 13.sp),
                             )
                             Text(
-                                "${r.artistName} · ${r.kind} · ${dateLabel(r)}", maxLines = 1,
-                                style = TextStyle(color = c.onSurfaceVariant, fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                                "${r.artistName} · ${kindLabel(context, r.kind)} · ${dateLabel(context, r)}", maxLines = 1,
+                                style = TextStyle(color = c.onSurfaceVariant, fontSize = 11.sp),
                             )
                         }
                     }

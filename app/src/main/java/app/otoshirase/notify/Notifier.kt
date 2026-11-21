@@ -18,6 +18,7 @@ import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Release
 import app.otoshirase.ui.MainActivity
 import app.otoshirase.ui.dateLabel
+import app.otoshirase.ui.kindLabel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -27,8 +28,8 @@ object Notifier {
     private const val GROUP = "app.otoshirase.RELEASES"
 
     fun createChannels(ctx: Context) {
-        val ch = NotificationChannel(CHANNEL, "新譜", NotificationManager.IMPORTANCE_DEFAULT)
-            .apply { description = "登録したアーティストの新譜" }
+        val ch = NotificationChannel(CHANNEL, ctx.getString(R.string.notif_channel), NotificationManager.IMPORTANCE_DEFAULT)
+            .apply { description = ctx.getString(R.string.notif_channel_desc) }
         ctx.getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
     }
 
@@ -41,8 +42,8 @@ object Notifier {
         releases.take(8).forEach { r ->
             val n = NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_note)
-                .setContentTitle("${r.artistName}「${r.title}」")
-                .setContentText("${r.kind} · ${dateLabel(r)}")
+                .setContentTitle(ctx.getString(R.string.notif_title, r.artistName, r.title))
+                .setContentText("${kindLabel(ctx, r.kind)} · ${dateLabel(ctx, r)}")
                 .setLargeIcon(r.artwork?.let { loadBitmap(it) })
                 .setContentIntent(openIntent(ctx, r))
                 .setAutoCancel(true)
@@ -55,7 +56,7 @@ object Notifier {
             releases.forEach { style.addLine("${it.artistName} — ${it.title}") }
             val summary = NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_note)
-                .setContentTitle("新譜 ${releases.size}件")
+                .setContentTitle(ctx.getString(R.string.notif_summary, releases.size))
                 .setStyle(style)
                 .setGroup(GROUP).setGroupSummary(true).setAutoCancel(true)
                 .setContentIntent(appIntent(ctx))

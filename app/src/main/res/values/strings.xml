@@ -1,6 +1,68 @@
 <resources>
-    <string name="app_name">オトシラセ</string>
-    <string name="listener_label">オトシラセ（よく聴くアーティストの集計）</string>
-    <string name="widget_label">オトシラセ 新譜</string>
-    <string name="widget_desc">登録アーティストの最新リリース</string>
+    <!-- 名前は未決定。決まるまで暫定 -->
+    <string name="app_name" translatable="false">オトシラセ</string>
+    <string name="listener_label">Most played artists</string>
+    <string name="widget_label">New releases</string>
+    <string name="widget_desc">Latest releases from your artists</string>
+    <string name="widget_empty">Add artists in the app to see their releases here</string>
+
+    <string name="tab_releases">Releases</string>
+    <string name="tab_artists">Artists</string>
+    <string name="tab_plays">Most played</string>
+
+    <string name="checking">Checking…</string>
+    <string name="checked_never">Not checked yet</string>
+    <string name="checked_ago">Checked %1$s</string>
+    <string name="check_now">Check now</string>
+    <plurals name="artist_count">
+        <item quantity="one">%d artist</item>
+        <item quantity="other">%d artists</item>
+    </plurals>
+
+    <string name="releases_empty">No new releases yet</string>
+    <string name="releases_empty_no_artists">Add artists and their new releases will appear here</string>
+    <string name="add_artist">Add artist</string>
+    <string name="section_upcoming">Upcoming</string>
+    <string name="section_recent">Recent</string>
+    <string name="badge_new">NEW</string>
+
+    <string name="artists_empty">No artists yet</string>
+    <string name="remove">Remove</string>
+    <string name="remove_title">Remove %1$s?</string>
+    <string name="remove_body">Their releases will also be removed from the list.</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="plays_intro_title">See the artists you play most</string>
+    <string name="plays_intro_body">Counted from songs you play in music apps. Allow notification access to start.</string>
+    <string name="allow">Allow</string>
+    <string name="plays_empty">Play some music and artists will show up here</string>
+    <plurals name="play_count">
+        <item quantity="one">%d play</item>
+        <item quantity="other">%d plays</item>
+    </plurals>
+    <string name="hide">Hide</string>
+
+    <string name="add">Add</string>
+    <string name="added">Added</string>
+    <string name="search_hint">Artist name</string>
+    <string name="search_error">Couldn\'t search. Check your connection.</string>
+
+    <string name="kind_single">Single</string>
+    <string name="kind_ep">EP</string>
+    <string name="kind_album">Album</string>
+
+    <string name="date_unknown">Date unknown</string>
+    <string name="today">Today</string>
+    <string name="date_upcoming">Out %1$s</string>
+    <string name="date_today">Out today</string>
+    <string name="date_released">Released %1$s</string>
+    <string name="ago_now">just now</string>
+    <string name="ago_min">%dm ago</string>
+    <string name="ago_hour">%dh ago</string>
+    <string name="ago_day">%dd ago</string>
+
+    <string name="notif_channel">New releases</string>
+    <string name="notif_channel_desc">New releases from your artists</string>
+    <string name="notif_title">%1$s – %2$s</string>
+    <string name="notif_summary">%d new releases</string>
 </resources>
