@@ -3,6 +3,7 @@ package app.otoshirase.work
 import android.content.Context
 import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
+import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
 import app.otoshirase.notify.Notifier
@@ -32,6 +33,7 @@ object Checker {
 
     /** @return 新着として通知すべきリリース */
     suspend fun checkArtist(a: Artist): List<Release> {
+        refreshImage(a)
         val items = AppleCatalog.albums(a.id)
         val today = LocalDate.now()
         var fresh = emptyList<Release>()
@@ -69,6 +71,18 @@ object Checker {
         }
         return fresh
     }
+
+    /** 画像がまだ無ければ取りに行く。取れなかった場合は一定期間おいてから再挑戦する */
+    private suspend fun refreshImage(a: Artist) {
+        val now = System.currentTimeMillis()
+        if (a.image != null || now - a.imageCheckedAt < IMAGE_RETRY_MS) return
+        val url = ArtistImages.fetch(a.id)
+        Store.update { s ->
+            s.copy(artists = s.artists.map { if (it.id == a.id) it.copy(image = url ?: it.image, imageCheckedAt = now) else it })
+        }
+    }
+
+    private const val IMAGE_RETRY_MS = 7L * 24 * 60 * 60 * 1000
 
     private fun key(r: Release) = "${r.artistId}:${r.title.trim().lowercase()}"
 }

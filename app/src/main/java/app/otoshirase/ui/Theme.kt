@@ -27,6 +27,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 
 /** 色は端末の壁紙から取る（Android 12 以降）。それより前の端末では青系の既定色にする */
 @Composable
@@ -68,14 +71,17 @@ fun PillButton(text: String, filled: Boolean = false, onClick: () -> Unit) {
     }
 }
 
-/** アーティストの頭文字を丸に入れたもの */
+/** アーティストの丸いアイコン。画像があれば画像、無ければ頭文字（画像の読み込み中も頭文字が下に見える） */
 @Composable
-fun Monogram(name: String) {
+fun Monogram(name: String, image: String? = null) {
     val c = MaterialTheme.colorScheme
     Box(
-        Modifier.size(40.dp).clip(CircleShape).background(c.primaryContainer),
+        Modifier.size(44.dp).clip(CircleShape).background(c.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         Text(name.trim().take(1).uppercase(), fontSize = 16.sp, color = c.onPrimaryContainer)
+        if (image != null) {
+            AsyncImage(model = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
     }
 }

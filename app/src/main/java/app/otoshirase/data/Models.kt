@@ -11,6 +11,8 @@ data class Artist(
     val url: String? = null,
     val aliases: List<String> = emptyList(), // 再生履歴との照合用（例: Hitsujibungaku）
     val addedAt: Long = System.currentTimeMillis(),
+    val image: String? = null,    // アーティスト画像（Apple Music のページから取得）
+    val imageCheckedAt: Long = 0, // 画像を最後に取りに行った時刻。取れなかったときに毎回取りに行かないため
 ) {
     fun matches(n: String): Boolean {
         val k = n.trim().lowercase()

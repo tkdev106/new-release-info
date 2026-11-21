@@ -119,7 +119,7 @@ private fun Root() {
             }
             when (tab) {
                 Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
-                Tab.Artists -> ArtistsScreen(state.artists) { searchFor = "" }
+                Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
                 Tab.Plays -> PlaysScreen(state.plays.filter { p ->
                     p.name !in state.ignored && state.artists.none { it.matches(p.name) }
                 }, onAdd = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
@@ -243,7 +243,7 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
 // ---------------- アーティスト ----------------
 
 @Composable
-private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
+private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd: () -> Unit) {
     val ctx = LocalContext.current
     var confirm by remember { mutableStateOf<Artist?>(null) }
     if (artists.isEmpty()) {
@@ -252,7 +252,9 @@ private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
     }
     LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
         items(artists.sortedBy { it.name.lowercase() }, key = { it.id }) { a ->
-            PersonRow(a.name, a.genre, onClick = { open(ctx, artistIntent(ctx, a)) }) {
+            // 画像が取れていないアーティストは、最新作のジャケットで代用する
+            val image = a.image ?: releases.firstOrNull { it.artistId == a.id }?.artwork
+            PersonRow(a.name, a.genre, image = image, onClick = { open(ctx, artistIntent(ctx, a)) }) {
                 IconButton(onClick = { confirm = a }) {
                     Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -277,7 +279,7 @@ private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
 
 /** 頭文字の丸・名前・補足を並べた1行。アーティスト・よく聴く・検索結果で共通 */
 @Composable
-private fun PersonRow(name: String, detail: String?, onClick: (() -> Unit)? = null, trailing: @Composable RowScope.() -> Unit) {
+private fun PersonRow(name: String, detail: String?, image: String? = null, onClick: (() -> Unit)? = null, trailing: @Composable RowScope.() -> Unit) {
     val c = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -285,7 +287,7 @@ private fun PersonRow(name: String, detail: String?, onClick: (() -> Unit)? = nu
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Monogram(name)
+        Monogram(name, image)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
