@@ -3,6 +3,7 @@
     <string name="listener_label">Most played artists</string>
     <string name="widget_label">New releases</string>
     <string name="widget_desc">Latest releases from your artists</string>
+    <string name="widget_upcoming">Out %1$s</string>
     <string name="widget_empty">Add artists in the app to see their releases here</string>
 
     <string name="tab_releases">Releases</string>
