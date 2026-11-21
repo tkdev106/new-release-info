@@ -1,0 +1,16 @@
+name = "new-releases-suggest"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# アプリを出し直さずに差し替えられるよう、モデル名はここで決める
+GEMINI_MODEL = "gemini-2.5-flash"
+
+# 1 IP あたり 1 分に 10 回まで。URL とトークンが漏れても無料枠を食い尽くされにくくする
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+[observability]
+enabled = true

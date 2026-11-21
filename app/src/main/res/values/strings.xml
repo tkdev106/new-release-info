@@ -72,4 +72,10 @@
     <string name="notif_title_upcoming">Upcoming release from %1$s</string>
     <string name="notif_text">%1$s · %2$s · %3$s</string>
     <string name="notif_summary">%d new releases</string>
+
+    <string name="suggestions">Suggested</string>
+    <string name="suggestions_loading">Finding artists you might like…</string>
+    <string name="suggestions_error">Couldn\'t load suggestions right now.</string>
+    <string name="suggestions_note">Suggested by AI and checked against Apple Music.</string>
+    <string name="not_interested">Not interested</string>
 </resources>
