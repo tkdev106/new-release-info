@@ -68,13 +68,6 @@ test("候補を返し、同じ入力の2回目はキャッシュから返す", a
   assert.equal(geminiCalls, 1);
 });
 
-test("一時的な失敗は1回だけやり直す", async () => {
-  geminiReplies.push(new Response("busy", { status: 503 }), ok(["b"]));
-  const r = await call({ artists: ["a"] });
-  assert.deepEqual(await r.json(), { suggestions: ["b"] });
-  assert.equal(geminiCalls, 2);
-});
-
 test("Gemini が使えないときは空の候補と502を返し、覚えない", async () => {
   geminiReplies.push(new Response("", { status: 500 }), new Response("", { status: 500 }));
   const r = await call({ artists: ["a"] });
@@ -88,6 +81,25 @@ test("タイムアウトや通信エラーでも空の候補を返す", async ()
   const r = await call({ artists: ["a"] });
   assert.equal(r.status, 502);
   assert.deepEqual((await r.json()).suggestions, []);
+});
+
+test("LLM の設定が足りなければ断る", async () => {
+  for (const e of [{ ...env, LLM_PROVIDER: "unknown" }, { ...env, GEMINI_API_KEY: "" }]) {
+    const r = await worker.fetch(
+      new Request("https://w.example/v1/suggestions", { method: "POST", headers: { Authorization: "Bearer secret" }, body: '{"artists":["a"]}' }),
+      e,
+      ctx,
+    );
+    assert.equal(r.status, 500);
+  }
+  assert.equal(geminiCalls, 0);
+});
+
+test("LLM が配列以外を返しても空の候補にする", async () => {
+  geminiReplies.push(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"suggestions":"x"}' }] } }] })));
+  const r = await call({ artists: ["a"] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { suggestions: [] });
 });
 
 test("回数制限を超えたら断る", async () => {

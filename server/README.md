@@ -1,7 +1,18 @@
 # おすすめアーティストの中継（Cloudflare Worker）
 
-アプリから受け取った「好きなアーティスト名」を Gemini に渡し、おすすめの**名前だけ**を返す。
-Gemini の API キーをアプリに入れないために置いている。
+アプリから受け取った「好きなアーティスト名」を LLM（今は Gemini）に渡し、おすすめの**名前だけ**を返す。
+LLM の API キーをアプリに入れないために置いている。
+
+## LLM の差し替え
+
+本体（`src/index.js`）は `src/llm/provider.js` の `LlmProvider` の形だけを知っている。
+
+- `id`: キャッシュのキー。モデルを変えたら変わる値（例: `gemini:gemini-2.5-flash`）
+- `suggestArtists(prompt)`: `prompt.system`（指示）と `prompt.user`（好きなアーティストの JSON）を渡して候補の配列を返す。失敗は例外
+
+プロンプト（`src/suggest.js` の `buildPrompt`）と出力の検証（`sanitizeSuggestions`）はどの LLM でも共通なので、新しい実装が持つのは API の呼び方と応答の取り出し方だけ。
+
+足すときは `src/llm/<名前>.js` を書き、`provider.js` の `factories` に 1 行足し、`wrangler.toml` の `LLM_PROVIDER` を変えて、必要なキーを `wrangler secret put` で入れる。アプリは変えなくてよい。
 
 返す名前は実在の保証がない。アプリ側で Apple のカタログと照合し、見つからないものは捨てる前提。
 
@@ -25,8 +36,8 @@ Content-Type: application/json
 
 呼び出し側は 200 以外をすべて「今は提案なし」として扱えばよい。Android 以外（将来の iOS など）からも同じ形で呼べる。
 
-- Gemini は 10 秒で打ち切り、429・5xx のときだけ 1 回やり直す
-- 同じアーティストの組み合わせ（順番・表記ゆれは無視）への結果は 7 日キャッシュする。空の結果は覚えない
+- Gemini は 10 秒で打ち切り、429・5xx のときだけ 1 回やり直す（`src/llm/gemini.js`）
+- 同じアーティストの組み合わせ（順番・表記ゆれは無視）と同じ LLM・モデルへの結果は 7 日キャッシュする。空の結果は覚えない
 
 ## 初回のセットアップ（本人の作業）
 

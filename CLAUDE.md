@@ -35,7 +35,7 @@
 
 ## 決めたこと（覆すときはユーザーに聞く）
 
-- おすすめアーティストは Gemini に名前だけを出させ、Apple のカタログで実在を確かめたものだけを出す。キーは Cloudflare Worker（`server/`）に置き、アプリには入れない。Firebase AI Logic は Google Play で配らないと App Check が活きないので採用しない。理由文は出さない
+- おすすめアーティストは Gemini に名前だけを出させ、Apple のカタログで実在を確かめたものだけを出す。キーは Cloudflare Worker（`server/`）に置き、アプリには入れない。LLM は Worker の `LlmProvider`（`server/src/llm/`）越しに使い、差し替えられるようにする。Firebase AI Logic は Google Play で配らないと App Check が活きないので採用しない。理由文は出さない
 - **費用がかかるものは使わない。** Spotify Web API（開発者の Premium 必須・利用者 5 人まで・発売予定が取れない）と Apple Music API（年 $99）は採用しない
 - よく聴くアーティストは「通知へのアクセス」で音楽アプリの再生中情報（MediaSession）だけを読んで集計する。通知の中身は読まない
 - 色は端末の壁紙から取る（dynamic color）。書体は端末標準。ダークモード対応

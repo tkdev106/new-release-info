@@ -1,10 +1,10 @@
-// おすすめアーティストを Gemini に聞く中継。Gemini の API キーをアプリに入れないために置く。
+// おすすめアーティストを LLM に聞く中継。LLM の API キーをアプリに入れないために置く。
 // 呼び出し側（Android・将来の iOS）に依存しない、JSON を POST するだけの形にしている。
+// どの LLM を使うかは llm/provider.js の LlmProvider 越しにしか知らない。
 
-import { buildGeminiRequest, cacheKey, parseGeminiResponse, parseRequest } from "./suggest.js";
+import { createProvider } from "./llm/provider.js";
+import { buildPrompt, cacheKey, parseRequest, sanitizeSuggestions } from "./suggest.js";
 
-const GEMINI_TIMEOUT_MS = 10_000;
-const RETRY_DELAY_MS = 800;
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const MAX_BODY_BYTES = 8 * 1024;
 
@@ -14,7 +14,8 @@ export default {
     if (url.pathname !== "/v1/suggestions") return json({ error: "not found" }, 404);
     if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
 
-    if (!env.APP_TOKEN || !env.GEMINI_API_KEY) return json({ error: "server not configured" }, 500);
+    const provider = createProvider(env);
+    if (!env.APP_TOKEN || !provider) return json({ error: "server not configured" }, 500);
     if (!(await tokenMatches(request.headers.get("Authorization"), env.APP_TOKEN))) {
       return json({ error: "unauthorized" }, 401);
     }
@@ -37,18 +38,18 @@ export default {
     const req = parseRequest(body);
     if (!req.ok) return json({ error: req.error }, 400);
 
-    const model = env.GEMINI_MODEL || "gemini-2.5-flash";
     const cache = caches.default;
-    const cacheUrl = new URL(`/cache/${await cacheKey(req.artists, model)}`, url.origin);
+    const cacheUrl = new URL(`/cache/${await cacheKey(req.artists, provider.id)}`, url.origin);
     const hit = await cache.match(cacheUrl);
     if (hit) return hit;
 
     let suggestions;
     try {
-      suggestions = await askGemini(req.artists, model, env.GEMINI_API_KEY);
+      const raw = await provider.suggestArtists(buildPrompt(req.artists));
+      suggestions = sanitizeSuggestions(raw, req.artists);
     } catch (e) {
       // 理由はログにだけ残す。呼び出し側は「今は出せない」とだけ分かればよい
-      console.error("gemini failed", String(e));
+      console.error("llm failed", provider.id, String(e));
       return json({ suggestions: [], error: "upstream unavailable" }, 502);
     }
 
@@ -58,25 +59,6 @@ export default {
     return res;
   },
 };
-
-async function askGemini(artists, model, apiKey) {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const init = {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify(buildGeminiRequest(artists)),
-  };
-  for (let attempt = 0; ; attempt++) {
-    const r = await fetch(endpoint, { ...init, signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS) });
-    if (r.ok) return parseGeminiResponse(await r.json(), artists);
-    // 混雑・一時的な失敗のときだけ 1 回やり直す。それ以外はやり直しても変わらない
-    if (attempt === 0 && (r.status === 429 || r.status >= 500)) {
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
-      continue;
-    }
-    throw new Error(`HTTP ${r.status}`);
-  }
-}
 
 /** 文字列比較の時間差からトークンを推測されないよう、ハッシュ同士を比べる */
 async function tokenMatches(header, token) {

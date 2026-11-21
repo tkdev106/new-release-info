@@ -3,7 +3,8 @@ main = "src/index.js"
 compatibility_date = "2026-11-01"
 
 [vars]
-# アプリを出し直さずに差し替えられるよう、モデル名はここで決める
+# アプリを出し直さずに差し替えられるよう、LLM とモデルはここで決める（実装は src/llm/）
+LLM_PROVIDER = "gemini"
 GEMINI_MODEL = "gemini-2.5-flash"
 
 # 1 IP あたり 1 分に 10 回まで。URL とトークンが漏れても無料枠を食い尽くされにくくする
