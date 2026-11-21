@@ -1,9 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+// おすすめの中継の接続先。公開リポジトリに入れないよう local.properties（Git に入らない）から読む
+val localProps = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun localProp(key: String): String = (localProps.getProperty(key) ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "app.otoshirase"
@@ -15,6 +23,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "SUGGEST_URL", "\"${localProp("suggest.url")}\"")
+        buildConfigField("String", "SUGGEST_TOKEN", "\"${localProp("suggest.token")}\"")
     }
     buildTypes {
         release {
@@ -27,7 +37,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
 }
 
 dependencies {

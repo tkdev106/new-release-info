@@ -12,6 +12,8 @@
 | 通知 | `notify/Notifier.kt` |
 | よく聴くアーティストの集計 | `playback/NowPlayingService.kt` |
 | 文言 | `res/values/strings.xml`（英語・既定）, `res/values-ja/strings.xml`（日本語） |
+| おすすめアーティスト（アプリ側） | `data/Suggestions.kt`（判断とインターフェース）, `data/WorkerSuggestionSource.kt`・`data/AppleArtistCatalog.kt`（実装）, `App.kt`（組み立て） |
+| おすすめアーティストの中継（Gemini、Cloudflare Worker） | `server/`（手順は `server/README.md`。テストは `cd server && npm test`） |
 
 ## コマンド
 
@@ -33,6 +35,7 @@
 
 ## 決めたこと（覆すときはユーザーに聞く）
 
+- おすすめアーティストは Gemini に名前だけを出させ、Apple のカタログで実在を確かめたものだけを出す。キーは Cloudflare Worker（`server/`）に置き、アプリには入れない。LLM は Worker の `LlmProvider`（`server/src/llm/`）越しに使い、差し替えられるようにする。Firebase AI Logic は Google Play で配らないと App Check が活きないので採用しない。理由文は出さない
 - **費用がかかるものは使わない。** Spotify Web API（開発者の Premium 必須・利用者 5 人まで・発売予定が取れない）と Apple Music API（年 $99）は採用しない
 - よく聴くアーティストは「通知へのアクセス」で音楽アプリの再生中情報（MediaSession）だけを読んで集計する。通知の中身は読まない
 - 色は端末の壁紙から取る（dynamic color）。書体は端末標準。ダークモード対応
@@ -51,6 +54,7 @@
 ## テスト
 
 - `CheckerTest` は実際の Apple カタログ API に問い合わせる結合テスト（通信が要る）
+- `SuggestionsTest` は中継とカタログを偽物に差し替えて、検証・除外・取り直しの判断を確かめる
 - `MusicAppsTest`・`ArtistImagesTest` は Android に依存しない判断を JVM で確かめる。Android に依存しない判断はこのように切り出してテストする
 - テスト名は振る舞いを日本語の文で書く（例: `` fun `再生回数がいちばん多いアプリを選ぶ`() ``）
 - 通知・ウィジェット・再生中情報の集計は端末でしか確かめられない。変えたらエミュレーターで実際に動かす

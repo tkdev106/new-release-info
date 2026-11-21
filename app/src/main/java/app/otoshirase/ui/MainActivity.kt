@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
@@ -53,6 +54,7 @@ import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
+import app.otoshirase.data.Suggestion
 import app.otoshirase.widget.ReleaseWidget
 import app.otoshirase.work.CheckWorker
 import app.otoshirase.work.Checker
@@ -139,7 +141,7 @@ private fun Root(start: Tab) {
     }
 
     searchFor?.let { initial ->
-        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), onDismiss = { searchFor = null })
+        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, onDismiss = { searchFor = null })
     }
 }
 
@@ -358,7 +360,7 @@ private fun listenerGranted(ctx: android.content.Context) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () -> Unit) {
+private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
     var query by remember { mutableStateOf(initial) }
@@ -384,6 +386,38 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
         }
     }
     LaunchedEffect(Unit) { if (initial.isBlank()) focus.requestFocus() }
+
+    // シートを閉じても確認は続けたいので App.scope で走らせる
+    val refresher = App.suggestions
+    LaunchedEffect(Unit) { refresher?.let { r -> App.scope.launch { r.refreshIfStale() } } }
+    val suggesting = refresher?.refreshing?.collectAsState()?.value == true
+    val suggestFailed = refresher?.failed?.collectAsState()?.value == true
+    // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
+    val partial = refresher?.partial?.collectAsState()?.value
+
+    val focusManager = LocalFocusManager.current
+    fun add(id: Long, name: String, genre: String?, url: String?, alias: String?) {
+        // 一覧が入れ替わる拍子に検索欄へフォーカスが移り、キーボードが出てしまうのを防ぐ
+        focusManager.clearFocus()
+        added += id
+        val artist = Artist(
+            id = id,
+            name = name,
+            genre = genre,
+            url = url,
+            aliases = listOfNotNull(alias).filter { it.isNotBlank() },
+            // 検索結果で取れていれば、登録時に取り直さない
+            image = ArtistImages.peek(id),
+            imageCheckedAt = if (ArtistImages.peek(id) != null) System.currentTimeMillis() else 0,
+        )
+        App.scope.launch {
+            Store.addArtist(artist)
+            // 好みが変わったので、おすすめを一新する
+            refresher?.refreshIfStale()
+            runCatching { Checker.checkArtist(artist) }
+            runCatching { ReleaseWidget().updateAll(ctx) }
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -413,6 +447,30 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
             }
             if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
+                if (query.isBlank() && refresher != null) {
+                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added }
+                    if (shown.isNotEmpty() || suggesting || suggestFailed) {
+                        item { SectionLabel(stringResource(R.string.suggestions)) }
+                    }
+                    if (!suggesting && suggestFailed && shown.isEmpty()) item {
+                        Text(stringResource(R.string.suggestions_error), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                    }
+                    items(shown, key = { "s" + it.artistId }) { sg ->
+                        PersonRow(sg.name, sg.genre, image = artistImageById(sg.artistId)) {
+                            IconButton(onClick = { App.scope.launch { Store.dismissSuggestion(sg.artistId) } }) {
+                                Icon(Icons.Default.Close, stringResource(R.string.not_interested), Modifier.size(18.dp), tint = c.onSurfaceVariant)
+                            }
+                            PillButton(stringResource(R.string.add)) { add(sg.artistId, sg.name, sg.genre, sg.url, null) }
+                        }
+                    }
+                    if (suggesting) item(key = "suggesting") {
+                        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp, color = c.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.suggestions_loading), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                        }
+                    }
+                }
                 items(results, key = { it.artistId!! }) { item ->
                     val id = item.artistId!!
                     val done = id in registered || id in added
@@ -420,22 +478,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
                         if (done) {
                             Text(stringResource(R.string.added), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
                         } else PillButton(stringResource(R.string.add)) {
-                            added += id
-                            val artist = Artist(
-                                id = id,
-                                name = item.artistName.orEmpty(),
-                                genre = item.primaryGenreName,
-                                url = item.artistLinkUrl?.substringBefore("?uo="),
-                                aliases = listOf(initial).filter { it.isNotBlank() },
-                                // 検索結果で取れていれば、登録時に取り直さない
-                                image = ArtistImages.peek(id),
-                                imageCheckedAt = if (ArtistImages.peek(id) != null) System.currentTimeMillis() else 0,
-                            )
-                            App.scope.launch {
-                                Store.addArtist(artist)
-                                runCatching { Checker.checkArtist(artist) }
-                                runCatching { ReleaseWidget().updateAll(ctx) }
-                            }
+                            add(id, item.artistName.orEmpty(), item.primaryGenreName, item.artistLinkUrl?.substringBefore("?uo="), initial)
                         }
                     }
                 }
