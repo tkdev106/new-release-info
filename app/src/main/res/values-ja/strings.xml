@@ -2,6 +2,11 @@
     <string name="listener_label">よく聴くアーティスト</string>
     <string name="widget_label">New Releases</string>
     <string name="widget_desc">登録したアーティストの最新リリース</string>
+    <string name="widget_settings_title">ウィジェットの背景</string>
+    <string name="widget_style_standard">標準</string>
+    <string name="widget_style_clear_white">透過・白い文字</string>
+    <string name="widget_style_clear_black">透過・黒い文字</string>
+    <string name="done">完了</string>
     <string name="widget_upcoming">%1$s 発売</string>
     <string name="widget_empty">アーティストを登録すると、新譜がここに表示されます</string>
 

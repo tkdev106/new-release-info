@@ -44,6 +44,15 @@
             </intent-filter>
         </service>
 
+        <!-- ウィジェットの設定（背景の種類）。置いたあと長押しから開く -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name=".widget.ReleaseWidgetReceiver"
             android:exported="true"

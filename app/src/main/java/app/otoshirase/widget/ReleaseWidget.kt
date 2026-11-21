@@ -12,6 +12,9 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.currentState
+import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
@@ -66,7 +69,8 @@ class ReleaseWidget : GlanceAppWidget() {
             val art by produceState(initialArt, releases.map { it.id }) {
                 if (releases.any { it.id !in value }) value = loadArt(releases)
             }
-            GlanceTheme { Content(context, releases, art) }
+            val style = WidgetStyle.of(currentState(WidgetStyle.KEY))
+            GlanceTheme { Content(context, releases, art, palette(style)) }
         }
     }
 
@@ -75,22 +79,43 @@ class ReleaseWidget : GlanceAppWidget() {
         releases.map { r -> async { r.id to r.artwork?.let { Artwork.load(it, 240) } } }.awaitAll().toMap()
     }
 
+    /** 背景の種類ごとの色。透過では壁紙の上に文字が直接乗る */
+    private class Palette(
+        val background: ColorProvider, val title: ColorProvider, val text: ColorProvider,
+        val sub: ColorProvider, val accent: ColorProvider, val tile: ColorProvider,
+    )
+
     @Composable
-    private fun Content(context: Context, releases: List<Release>, art: Map<Long, Bitmap?>) {
+    private fun palette(style: WidgetStyle): Palette {
         val c = GlanceTheme.colors
+        return when (style) {
+            WidgetStyle.Standard -> Palette(c.widgetBackground, c.primary, c.onSurface, c.onSurfaceVariant, c.primary, c.surfaceVariant)
+            WidgetStyle.ClearWhite -> Palette(
+                ColorProvider(Color.Transparent), ColorProvider(Color.White), ColorProvider(Color.White),
+                ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White), ColorProvider(Color.White.copy(alpha = 0.18f)),
+            )
+            WidgetStyle.ClearBlack -> Palette(
+                ColorProvider(Color.Transparent), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0xFF1B1B1F)),
+                ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
+            )
+        }
+    }
+
+    @Composable
+    private fun Content(context: Context, releases: List<Release>, art: Map<Long, Bitmap?>, p: Palette) {
         val size = LocalSize.current
         val openApp = actionStartActivity<MainActivity>()
-        Column(GlanceModifier.fillMaxSize().background(c.widgetBackground).cornerRadius(24.dp).padding(PAD.dp)) {
+        Column(GlanceModifier.fillMaxSize().background(p.background).cornerRadius(24.dp).padding(PAD.dp)) {
             Text(
                 context.getString(R.string.widget_label),
-                style = TextStyle(color = c.primary, fontWeight = FontWeight.Medium, fontSize = 14.sp),
+                style = TextStyle(color = p.title, fontWeight = FontWeight.Medium, fontSize = 14.sp),
                 modifier = GlanceModifier.clickable(openApp),
             )
             Spacer(GlanceModifier.height(GAP.dp))
             if (releases.isEmpty()) {
                 Text(
                     context.getString(R.string.widget_empty),
-                    style = TextStyle(color = c.onSurfaceVariant, fontSize = 12.sp),
+                    style = TextStyle(color = p.sub, fontSize = 12.sp),
                     modifier = GlanceModifier.clickable(openApp),
                 )
                 return@Column
@@ -99,21 +124,20 @@ class ReleaseWidget : GlanceAppWidget() {
             Row(GlanceModifier.fillMaxWidth()) {
                 releases.take(layout.count).forEachIndexed { i, r ->
                     if (i > 0) Spacer(GlanceModifier.width(GAP.dp))
-                    Item(context, r, art[r.id], layout.image)
+                    Item(context, r, art[r.id], layout.image, p)
                 }
             }
         }
     }
 
     @Composable
-    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int) {
-        val c = GlanceTheme.colors
+    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int, p: Palette) {
         val open = releaseIntent(context, r)
         Column(
             GlanceModifier.width(imageDp.dp).let { m -> if (open != null) m.clickable(actionStartActivity(open)) else m },
         ) {
             Box(
-                GlanceModifier.size(imageDp.dp).cornerRadius(12.dp).background(c.surfaceVariant),
+                GlanceModifier.size(imageDp.dp).cornerRadius(12.dp).background(p.tile),
                 contentAlignment = Alignment.Center,
             ) {
                 if (bitmap != null) {
@@ -124,11 +148,11 @@ class ReleaseWidget : GlanceAppWidget() {
                 }
             }
             Spacer(GlanceModifier.height(6.dp))
-            Text(r.title, maxLines = 1, style = TextStyle(color = c.onSurface, fontWeight = FontWeight.Medium, fontSize = 12.sp))
+            Text(r.title, maxLines = 1, style = TextStyle(color = p.text, fontWeight = FontWeight.Medium, fontSize = 12.sp))
             Text(
                 if (r.upcoming) context.getString(R.string.widget_upcoming, shortDate(context, r)) else shortDate(context, r),
                 maxLines = 1,
-                style = TextStyle(color = if (r.upcoming) c.primary else c.onSurfaceVariant, fontSize = 11.sp),
+                style = TextStyle(color = if (r.upcoming) p.accent else p.sub, fontSize = 11.sp),
             )
         }
     }

@@ -3,6 +3,11 @@
     <string name="listener_label">Most played artists</string>
     <string name="widget_label">New Releases</string>
     <string name="widget_desc">Latest releases from your artists</string>
+    <string name="widget_settings_title">Widget background</string>
+    <string name="widget_style_standard">Standard</string>
+    <string name="widget_style_clear_white">Transparent, white text</string>
+    <string name="widget_style_clear_black">Transparent, black text</string>
+    <string name="done">Done</string>
     <string name="widget_upcoming">Out %1$s</string>
     <string name="widget_empty">Add artists in the app to see their releases here</string>
 
