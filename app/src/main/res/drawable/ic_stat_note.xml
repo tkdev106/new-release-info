@@ -1,6 +1,11 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
-    android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF"
-        android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z" />
+    android:viewportWidth="54" android:viewportHeight="54">
+    <!-- 通知のステータスバー用。ランチャーアイコンと同じ形 -->
+    <group android:translateX="-24" android:translateY="-29">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M73.075,47.582 A24,24 0 1,1 60.418,34.925 A9.5,9.5 0 0,0 73.075,47.582 Z M51,48.5 a8.5,8.5 0 1,1 0,17 a8.5,8.5 0 1,1 0,-17 z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M51,55.2 a1.8,1.8 0 1,1 0,3.6 a1.8,1.8 0 1,1 0,-3.6 z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M69,32.5 a6.5,6.5 0 1,1 0,13 a6.5,6.5 0 1,1 0,-13 z" />
+    </group>
 </vector>

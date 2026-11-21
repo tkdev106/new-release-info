@@ -1,13 +1,14 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- 八分音符と、新着を表す小さな点。モノクロ -->
-    <group android:translateX="30" android:translateY="30" android:scaleX="2" android:scaleY="2">
-        <path android:fillColor="#FFF1F0EC"
-            android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z" />
+    <!-- レコード盤と、新着を表す点。点のまわりは盤を切り欠いて背景を見せる -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M73.075,47.582 A24,24 0 1,1 60.418,34.925 A9.5,9.5 0 0,0 73.075,47.582 Z" />
+    <group>
+        <clip-path android:pathData="M73.075,47.582 A24,24 0 1,1 60.418,34.925 A9.5,9.5 0 0,0 73.075,47.582 Z" />
+        <path android:strokeColor="#FFE4E2DD" android:strokeWidth="0.8"
+            android:pathData="M51,37.5 a19.5,19.5 0 1,1 0,39 a19.5,19.5 0 1,1 0,-39 M51,41.5 a15.5,15.5 0 1,1 0,31 a15.5,15.5 0 1,1 0,-31" />
     </group>
-    <group android:translateX="64" android:translateY="32">
-        <path android:fillColor="#FFF1F0EC"
-            android:pathData="M6,0a6,6 0,1 1,0 12a6,6 0,1 1,0 -12z" />
-    </group>
+    <path android:fillColor="#FFFF6A4D" android:pathData="M51,48.5 a8.5,8.5 0 1,1 0,17 a8.5,8.5 0 1,1 0,-17 z" />
+    <path android:fillColor="#FF11131A" android:pathData="M51,55.2 a1.8,1.8 0 1,1 0,3.6 a1.8,1.8 0 1,1 0,-3.6 z" />
+    <path android:fillColor="#FFFF6A4D" android:pathData="M69,32.5 a6.5,6.5 0 1,1 0,13 a6.5,6.5 0 1,1 0,-13 z" />
 </vector>

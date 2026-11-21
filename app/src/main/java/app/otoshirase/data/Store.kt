@@ -69,7 +69,8 @@ object Store {
                 val prev = map[n.lowercase()]
                 map[n.lowercase()] = PlayStat(prev?.name ?: n, (prev?.count ?: 0) + 1, now, app)
             }
-            s.copy(plays = map.values.sortedByDescending { it.count }.take(500))
+            val apps = if (app == null) s.appPlays else s.appPlays + (app to (s.appPlays[app] ?: 0) + 1)
+            s.copy(plays = map.values.sortedByDescending { it.count }.take(500), appPlays = apps)
         }
     }
 }

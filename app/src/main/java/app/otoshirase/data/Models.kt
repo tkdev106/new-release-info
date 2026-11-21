@@ -52,5 +52,7 @@ data class AppState(
     val releases: List<Release> = emptyList(),
     val plays: List<PlayStat> = emptyList(),
     val ignored: List<String> = emptyList(),
+    /** 音楽アプリ（パッケージ名）ごとの再生回数。新譜をどのアプリで開くかに使う */
+    val appPlays: Map<String, Int> = emptyMap(),
     val lastCheck: Long = 0,
 )

@@ -2,7 +2,6 @@ package app.otoshirase.ui
 
 import android.Manifest
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -192,11 +191,11 @@ private fun ReleasesScreen(releases: List<Release>, hasArtists: Boolean, addArti
     LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
         if (upcoming.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.section_upcoming)) }
-            items(upcoming, key = { it.id }) { ReleaseRow(it) { open(ctx, it.url) } }
+            items(upcoming, key = { it.id }) { ReleaseRow(it) { open(ctx, releaseIntent(ctx, it)) } }
         }
         if (out.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.section_recent)) }
-            items(out, key = { it.id }) { ReleaseRow(it) { open(ctx, it.url) } }
+            items(out, key = { it.id }) { ReleaseRow(it) { open(ctx, releaseIntent(ctx, it)) } }
         }
     }
 }
@@ -253,7 +252,7 @@ private fun ArtistsScreen(artists: List<Artist>, onAdd: () -> Unit) {
     }
     LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
         items(artists.sortedBy { it.name.lowercase() }, key = { it.id }) { a ->
-            PersonRow(a.name, a.genre, onClick = { open(ctx, a.url) }) {
+            PersonRow(a.name, a.genre, onClick = { open(ctx, artistIntent(ctx, a)) }) {
                 IconButton(onClick = { confirm = a }) {
                     Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -441,7 +440,7 @@ private fun Empty(message: String, action: Pair<String, () -> Unit>?, title: Str
     }
 }
 
-private fun open(ctx: android.content.Context, url: String?) {
-    url ?: return
-    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+private fun open(ctx: android.content.Context, intent: Intent?) {
+    intent ?: return
+    runCatching { ctx.startActivity(intent) }
 }

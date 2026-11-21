@@ -9,7 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -19,6 +18,7 @@ import app.otoshirase.data.Release
 import app.otoshirase.ui.MainActivity
 import app.otoshirase.ui.dateLabel
 import app.otoshirase.ui.kindLabel
+import app.otoshirase.ui.releaseIntent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -66,7 +66,7 @@ object Notifier {
     }
 
     private fun openIntent(ctx: Context, r: Release): PendingIntent {
-        val i = r.url?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)) } ?: Intent(ctx, MainActivity::class.java)
+        val i = releaseIntent(ctx, r) ?: Intent(ctx, MainActivity::class.java)
         return PendingIntent.getActivity(ctx, r.id.hashCode(), i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 

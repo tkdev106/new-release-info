@@ -2,7 +2,6 @@ package app.otoshirase.widget
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +33,7 @@ import app.otoshirase.ui.MainActivity
 import app.otoshirase.R
 import app.otoshirase.ui.dateLabel
 import app.otoshirase.ui.kindLabel
+import app.otoshirase.ui.releaseIntent
 
 class ReleaseWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -63,7 +63,7 @@ class ReleaseWidget : GlanceAppWidget() {
             } else {
                 LazyColumn {
                     items(releases, itemId = { it.id }) { r ->
-                        val open = r.url?.let { Intent(Intent.ACTION_VIEW, Uri.parse(it)) }
+                        val open = releaseIntent(context, r)
                         Column(
                             GlanceModifier.fillMaxWidth().padding(vertical = 4.dp).let { m ->
                                 if (open != null) m.clickable(actionStartActivity(open)) else m
