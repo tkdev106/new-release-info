@@ -45,6 +45,7 @@ import app.otoshirase.work.CheckWorker
 import app.otoshirase.work.Checker
 import androidx.glance.appwidget.updateAll
 import coil.compose.AsyncImage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -135,7 +136,7 @@ private fun Root() {
     ) { pad ->
         Box(Modifier.padding(pad).fillMaxSize()) {
             when (tab) {
-                Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists }
+                Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
                 Tab.Artists -> ArtistsScreen(state.artists)
                 Tab.Plays -> PlaysScreen(state.plays.filter { p ->
                     p.name !in state.ignored && state.artists.none { it.matches(p.name) }
@@ -328,10 +329,16 @@ private fun SearchSheet(initial: String, registered: Set<Long>, onDismiss: () ->
         if (query.isBlank()) { results = emptyList(); return@LaunchedEffect }
         delay(400)
         loading = true; error = null
-        runCatching { AppleCatalog.searchArtists(query.trim()) }
-            .onSuccess { results = it }
-            .onFailure { error = "検索できませんでした（${it.message}）" }
-        loading = false
+        try {
+            results = AppleCatalog.searchArtists(query.trim())
+        } catch (e: CancellationException) {
+            // 入力が変わって前の検索が打ち切られただけなので、エラーにしない
+            throw e
+        } catch (e: Exception) {
+            error = "検索できませんでした（${e.message}）"
+        } finally {
+            loading = false
+        }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
