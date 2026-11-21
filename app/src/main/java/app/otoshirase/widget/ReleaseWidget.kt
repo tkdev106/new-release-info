@@ -31,30 +31,34 @@ import androidx.glance.text.TextStyle
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
 import app.otoshirase.ui.MainActivity
+import app.otoshirase.ui.DarkScheme
+import app.otoshirase.ui.LightScheme
 import app.otoshirase.ui.dateLabel
+import androidx.glance.material3.ColorProviders
+import androidx.glance.text.FontFamily
 
 class ReleaseWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         Store.init(context)
         val releases = Store.state.value.releases.take(10)
-        provideContent { GlanceTheme { Content(releases) } }
+        provideContent { GlanceTheme(colors = ColorProviders(light = LightScheme, dark = DarkScheme)) { Content(releases) } }
     }
 
     @Composable
     private fun Content(releases: List<Release>) {
         val c = GlanceTheme.colors
         Column(
-            GlanceModifier.fillMaxSize().background(c.widgetBackground).cornerRadius(20.dp).padding(14.dp)
+            GlanceModifier.fillMaxSize().background(c.background).cornerRadius(20.dp).padding(14.dp)
         ) {
             Text(
                 "新譜",
-                style = TextStyle(color = c.primary, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                style = TextStyle(color = c.onSurface, fontFamily = FontFamily.Serif, fontSize = 20.sp),
                 modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()),
             )
             Spacer(GlanceModifier.height(6.dp))
             if (releases.isEmpty()) {
                 Text(
-                    "アプリでアーティストを登録すると、ここに最新リリースが出ます",
+                    "アーティストを登録すると、新譜がここに出ます",
                     style = TextStyle(color = c.onSurfaceVariant, fontSize = 12.sp),
                     modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()),
                 )
@@ -73,7 +77,7 @@ class ReleaseWidget : GlanceAppWidget() {
                             )
                             Text(
                                 "${r.artistName} · ${r.kind} · ${dateLabel(r)}", maxLines = 1,
-                                style = TextStyle(color = c.onSurfaceVariant, fontSize = 11.sp),
+                                style = TextStyle(color = c.onSurfaceVariant, fontFamily = FontFamily.Monospace, fontSize = 11.sp),
                             )
                         }
                     }

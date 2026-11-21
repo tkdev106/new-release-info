@@ -28,7 +28,7 @@ object Notifier {
 
     fun createChannels(ctx: Context) {
         val ch = NotificationChannel(CHANNEL, "新譜", NotificationManager.IMPORTANCE_DEFAULT)
-            .apply { description = "登録アーティストの新しいリリース" }
+            .apply { description = "登録したアーティストの新譜" }
         ctx.getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
     }
 

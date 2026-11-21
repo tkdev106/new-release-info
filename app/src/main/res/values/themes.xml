@@ -1,7 +1,10 @@
 <resources>
+    <!-- 起動直後に一瞬見える下地。Compose 側の背景色と揃える -->
     <style name="Theme.Otoshirase" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
-    <color name="icon_bg">#1F1B2E</color>
+    <color name="paper">#F4F3EF</color>
+    <color name="icon_bg">#0B0B0A</color>
 </resources>
