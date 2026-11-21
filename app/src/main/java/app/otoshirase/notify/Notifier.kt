@@ -42,8 +42,8 @@ object Notifier {
         releases.take(8).forEach { r ->
             val n = NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_note)
-                .setContentTitle(ctx.getString(R.string.notif_title, r.artistName, r.title))
-                .setContentText("${kindLabel(ctx, r.kind)} · ${dateLabel(ctx, r)}")
+                .setContentTitle(ctx.getString(if (r.upcoming) R.string.notif_title_upcoming else R.string.notif_title_released, r.artistName))
+                .setContentText(ctx.getString(R.string.notif_text, r.title, kindLabel(ctx, r.kind), dateLabel(ctx, r)))
                 .setLargeIcon(r.artwork?.let { loadBitmap(it) })
                 .setContentIntent(openIntent(ctx, r))
                 .setAutoCancel(true)

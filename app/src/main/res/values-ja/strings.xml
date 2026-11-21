@@ -48,7 +48,7 @@
     <string name="date_unknown">日付不明</string>
     <string name="today">今日</string>
     <string name="date_upcoming">%1$s 発売予定</string>
-    <string name="date_today">今日リリース</string>
+    <string name="date_today">本日リリース</string>
     <string name="date_released">%1$s リリース</string>
     <string name="ago_now">たった今</string>
     <string name="ago_min">%d分前</string>
@@ -57,6 +57,8 @@
 
     <string name="notif_channel">新譜</string>
     <string name="notif_channel_desc">登録したアーティストの新譜</string>
-    <string name="notif_title">%1$s「%2$s」</string>
+    <string name="notif_title_released">%1$sの新譜がリリースされました</string>
+    <string name="notif_title_upcoming">%1$sの新譜がリリースされます</string>
+    <string name="notif_text">「%1$s」%2$s · %3$s</string>
     <string name="notif_summary">新譜 %d件</string>
 </resources>

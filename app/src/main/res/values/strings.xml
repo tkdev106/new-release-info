@@ -62,6 +62,8 @@
 
     <string name="notif_channel">New releases</string>
     <string name="notif_channel_desc">New releases from your artists</string>
-    <string name="notif_title">%1$s – %2$s</string>
+    <string name="notif_title_released">New release from %1$s</string>
+    <string name="notif_title_upcoming">Upcoming release from %1$s</string>
+    <string name="notif_text">%1$s · %2$s · %3$s</string>
     <string name="notif_summary">%d new releases</string>
 </resources>
