@@ -2,7 +2,6 @@ package app.otoshirase.data
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,9 +32,17 @@ class PlaysPromptTest {
     }
 
     @Test
-    fun `一度出したら二度と出さない`() {
-        val s = AppState(plays = listOf(play("羊文学", 100), play("Vaundy", 200)), playsPrompted = true)
+    fun `出したあとは同じ顔ぶれでは出さない`() {
+        val s = PlaysPrompt.markPrompted(AppState(plays = listOf(play("羊文学", 100), play("Vaundy", 200))))
         assertNull(PlaysPrompt.artistToMention(s))
+        assertNull(PlaysPrompt.artistToMention(s.copy(plays = s.plays + play("YOASOBI", 300))))
+    }
+
+    @Test
+    fun `出したあと新しいアーティストが2組たまったらまた出す`() {
+        val s = PlaysPrompt.markPrompted(AppState(plays = listOf(play("羊文学", 100), play("Vaundy", 200))))
+        val next = s.copy(plays = s.plays + play("YOASOBI", 400) + play("Ado", 300) + play("羊文学", 500).copy(count = 2))
+        assertEquals("YOASOBI", PlaysPrompt.artistToMention(next))
     }
 
     @Test
@@ -45,7 +52,7 @@ class PlaysPromptTest {
         PlaysPrompt.check(store, notifier)
         PlaysPrompt.check(store, notifier)
         assertEquals(listOf("Vaundy"), notifier.shown)
-        assertTrue(store.current().playsPrompted)
+        assertEquals(listOf("羊文学", "vaundy"), store.current().promptedPlays)
     }
 
     @Test
@@ -54,7 +61,7 @@ class PlaysPromptTest {
         val notifier = FakeNotifier(allowed = false)
         PlaysPrompt.check(store, notifier)
         assertEquals(emptyList<String>(), notifier.shown)
-        assertFalse(store.current().playsPrompted)
+        assertTrue(store.current().promptedPlays.isEmpty())
     }
 
     private class FakeStore(private var state: AppState) : StateStore {

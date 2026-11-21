@@ -12,29 +12,38 @@ interface PlaysPromptNotifier {
 }
 
 /**
- * Most Played にアーティストがたまったら、一度だけ登録を促す通知を出す。
- * 何度も出すと邪魔なので、出したら [AppState.playsPrompted] を立てて二度と出さない。
+ * Most Played に新しいアーティストが2組たまるたびに、登録を促す通知を出す。
+ * 同じ顔ぶれで何度も出すと邪魔なので、出したときの顔ぶれを [AppState.promptedPlays] に残し、
+ * それ以外のアーティストだけを数える。
  */
 object PlaysPrompt {
     const val THRESHOLD = 2
 
-    /** @return 通知に名前を出すアーティスト（直近に再生した人）。まだ出さないなら null */
+    private const val MAX_REMEMBERED = 500
+
+    /** @return 通知に名前を出すアーティスト（新顔のうち直近に再生した人）。まだ出さないなら null */
     fun artistToMention(s: AppState): String? {
-        if (s.playsPrompted) return null
-        val plays = s.unregisteredPlays()
-        if (plays.size < THRESHOLD) return null
-        return plays.maxByOrNull { it.lastPlayed }?.name
+        val counted = s.promptedPlays.toSet()
+        val fresh = s.unregisteredPlays().filterNot { it.name.lowercase() in counted }
+        if (fresh.size < THRESHOLD) return null
+        return fresh.maxByOrNull { it.lastPlayed }?.name
+    }
+
+    /** 今の顔ぶれを数え済みにする */
+    fun markPrompted(s: AppState): AppState {
+        val names = s.unregisteredPlays().map { it.name.lowercase() }
+        return s.copy(promptedPlays = (s.promptedPlays + names).distinct().takeLast(MAX_REMEMBERED))
     }
 
     suspend fun check(store: StateStore, notifier: PlaysPromptNotifier) {
-        // 権限が無いときに「出した」ことにすると、許可したあとも二度と出せなくなる
+        // 権限が無いときに数え済みにすると、許可したあとにその顔ぶれで出せなくなる
         if (!notifier.canNotify()) return
         if (artistToMention(store.current()) == null) return
         var name: String? = null
         // 再生の記録は並行して届くので、判定と「出した」印を同じ更新の中で行い二重に出さない
         store.update { s ->
             name = artistToMention(s)
-            if (name == null) s else s.copy(playsPrompted = true)
+            if (name == null) s else markPrompted(s)
         }
         name?.let(notifier::showPlaysPrompt)
     }
