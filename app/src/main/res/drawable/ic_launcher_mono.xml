@@ -1,9 +1,9 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- テーマアイコン用。1色で塗られるので、色の違いは穴で表す -->
-    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
-        android:pathData="M73.075,47.582 A24,24 0 1,1 60.418,34.925 A9.5,9.5 0 0,0 73.075,47.582 Z M51,48.5 a8.5,8.5 0 1,1 0,17 a8.5,8.5 0 1,1 0,-17 z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M51,55.2 a1.8,1.8 0 1,1 0,3.6 a1.8,1.8 0 1,1 0,-3.6 z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M69,32.5 a6.5,6.5 0 1,1 0,13 a6.5,6.5 0 1,1 0,-13 z" />
+    <!-- テーマアイコン用。ランチャーが壁紙の色で塗る -->
+    <group android:translateX="27.6" android:translateY="26.4" android:scaleX="2.2" android:scaleY="2.2">
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+            android:pathData="M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.89,2 2,2zM18,16v-5c0,-3.07 -1.64,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.63,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2zM12.000,7.523L12.000,12.078C11.745,11.932 11.452,11.841 11.136,11.841C10.182,11.841 9.409,12.614 9.409,13.568C9.409,14.523 10.182,15.295 11.136,15.295C12.091,15.295 12.864,14.523 12.864,13.568L12.864,9.250L14.591,9.250L14.591,7.523L12.000,7.523Z" />
+    </group>
 </vector>
