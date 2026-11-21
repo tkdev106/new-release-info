@@ -77,18 +77,15 @@ class SuggestionFinder(
     }
 }
 
-/** いつ取り直すか。Gemini とカタログへの問い合わせを減らすため、なるべく前回の結果を使う */
+/** いつ取り直すか。登録が変わったらすぐ、変わらなければ 7 日ごと */
 object SuggestionPolicy {
     const val FRESH_MS = 7L * 24 * 60 * 60 * 1000
-    /** 登録が変わっても、これより短い間隔では取り直さない（追加のたびに 1 分かかる確認を走らせないため） */
-    const val MIN_INTERVAL_MS = 24L * 60 * 60 * 1000
 
     fun key(liked: List<Artist>): String = liked.map { it.id }.sorted().joinToString(",")
 
     fun needsRefresh(state: AppState, now: Long): Boolean {
         if (state.artists.isEmpty()) return false
-        val age = now - state.suggestionsAt
-        if (age >= FRESH_MS) return true
-        return state.suggestionsKey != key(state.artists) && age >= MIN_INTERVAL_MS
+        if (state.suggestionsKey != key(state.artists)) return true
+        return now - state.suggestionsAt >= FRESH_MS
     }
 }

@@ -107,14 +107,13 @@ class SuggestionsTest {
     }
 
     @Test
-    fun `7日経つか登録が変わって1日経ったら取り直す`() {
+    fun `登録が変わったらすぐ取り直し、変わらなければ7日ごとに取り直す`() {
         val day = 24L * 60 * 60 * 1000
         val s = AppState(artists = liked, suggestionsKey = SuggestionPolicy.key(liked), suggestionsAt = 0)
         assertFalse(SuggestionPolicy.needsRefresh(s, 6 * day))
         assertTrue(SuggestionPolicy.needsRefresh(s, 7 * day))
         val changed = s.copy(artists = liked + artist(2, "TENDRE"))
-        assertFalse(SuggestionPolicy.needsRefresh(changed, day / 2))
-        assertTrue(SuggestionPolicy.needsRefresh(changed, day))
+        assertTrue(SuggestionPolicy.needsRefresh(changed, 1))
         assertFalse(SuggestionPolicy.needsRefresh(AppState(), 100 * day))
     }
 }

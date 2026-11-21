@@ -396,6 +396,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         )
         App.scope.launch {
             Store.addArtist(artist)
+            // 好みが変わったので、おすすめを一新する
+            refresher?.refreshIfStale()
             runCatching { Checker.checkArtist(artist) }
             runCatching { ReleaseWidget().updateAll(ctx) }
         }

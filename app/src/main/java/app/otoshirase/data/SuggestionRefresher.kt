@@ -13,15 +13,19 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
     private val _failed = MutableStateFlow(false)
     val failed: StateFlow<Boolean> = _failed
 
-    suspend fun refreshIfStale(now: Long = System.currentTimeMillis()) {
-        val s = Store.state.value
-        if (!SuggestionPolicy.needsRefresh(s, now)) return
+    suspend fun refreshIfStale() {
         if (!running.compareAndSet(false, true)) return
         _refreshing.value = true
         try {
-            val list = finder.find(s.artists, s.ignored, s.dismissedSuggestions.toSet())
-            Store.saveSuggestions(list, SuggestionPolicy.key(s.artists), now)
-            _failed.value = false
+            // 確認している間にさらに登録が増えたら、その分も続けて取り直す
+            repeat(MAX_ROUNDS) {
+                val s = Store.state.value
+                val now = System.currentTimeMillis()
+                if (!SuggestionPolicy.needsRefresh(s, now)) return
+                val list = finder.find(s.artists, s.ignored, s.dismissedSuggestions.toSet())
+                Store.saveSuggestions(list, SuggestionPolicy.key(s.artists), now)
+                _failed.value = false
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -30,5 +34,9 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
             _refreshing.value = false
             running.set(false)
         }
+    }
+
+    private companion object {
+        const val MAX_ROUNDS = 3
     }
 }
