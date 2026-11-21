@@ -12,8 +12,11 @@
 ## ビルド
 
 ```bash
-./gradlew assembleDebug
+./gradlew verify          # lint・単体テスト・APK のビルドをまとめて
+./gradlew assembleDebug   # APK だけ
 ```
+
+JDK 21 が必要（Java 25 では Gradle 8.14 が動かない）。push すると GitHub Actions が同じ検証を走らせ、APK を成果物（app-debug）に置く。
 
 APK は `app/build/outputs/apk/debug/app-debug.apk` に出力される。
 

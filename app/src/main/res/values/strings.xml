@@ -11,9 +11,9 @@
     <string name="widget_upcoming">Out %1$s</string>
     <string name="widget_empty">Add artists in the app to see their releases here</string>
 
-    <string name="tab_releases">New Releases</string>
-    <string name="tab_artists">Artists</string>
-    <string name="tab_plays">Most Played</string>
+    <string name="tab_releases" translatable="false">New Releases</string>
+    <string name="tab_artists" translatable="false">Artists</string>
+    <string name="tab_plays" translatable="false">Most Played</string>
 
     <string name="checking">Checking…</string>
     <string name="checked_never">Not checked yet</string>
@@ -29,7 +29,7 @@
     <string name="add_artist">Add artist</string>
     <string name="section_upcoming">Upcoming</string>
     <string name="section_recent">Recent</string>
-    <string name="badge_new">NEW</string>
+    <string name="badge_new" translatable="false">NEW</string>
 
     <string name="artists_empty">No artists yet</string>
     <string name="remove">Remove</string>
@@ -53,7 +53,7 @@
     <string name="search_error">Couldn\'t search. Check your connection.</string>
 
     <string name="kind_single">Single</string>
-    <string name="kind_ep">EP</string>
+    <string name="kind_ep" translatable="false">EP</string>
     <string name="kind_album">Album</string>
 
     <string name="date_unknown">Date unknown</string>
