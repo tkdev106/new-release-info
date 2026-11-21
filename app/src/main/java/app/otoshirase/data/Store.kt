@@ -44,7 +44,11 @@ object Store {
 
     suspend fun addArtist(a: Artist) = update { s ->
         if (s.artists.any { it.id == a.id }) s
-        else s.copy(artists = s.artists + a, ignored = s.ignored.filterNot { a.matches(it) })
+        else s.copy(
+            artists = s.artists + a,
+            ignored = s.ignored.filterNot { a.matches(it) },
+            suggestions = s.suggestions.filterNot { it.artistId == a.id },
+        )
     }
 
     suspend fun removeArtist(id: Long) = update { s ->
@@ -52,6 +56,27 @@ object Store {
             artists = s.artists.filterNot { it.id == id },
             seen = s.seen - id,
             releases = s.releases.filterNot { it.artistId == id },
+        )
+    }
+
+    suspend fun saveSuggestions(list: List<Suggestion>, key: String, at: Long) = update { s ->
+        // 確認している間に登録・興味なしにしたものは出さない
+        val excluded = s.artists.map { it.id }.toSet() + s.dismissedSuggestions
+        s.copy(suggestions = list.filterNot { it.artistId in excluded }, suggestionsKey = key, suggestionsAt = at)
+    }
+
+    suspend fun saveCatalogLookups(found: Map<String, CatalogLookup>, now: Long) = update { s ->
+        val merged = (s.catalogLookups + found)
+            .filterValues { now - it.checkedAt < SuggestionFinder.LOOKUP_TTL_MS }
+            .entries.sortedByDescending { it.value.checkedAt }.take(1000)
+            .associate { it.key to it.value }
+        s.copy(catalogLookups = merged)
+    }
+
+    suspend fun dismissSuggestion(id: Long) = update { s ->
+        s.copy(
+            suggestions = s.suggestions.filterNot { it.artistId == id },
+            dismissedSuggestions = (s.dismissedSuggestions + id).distinct().takeLast(500),
         )
     }
 

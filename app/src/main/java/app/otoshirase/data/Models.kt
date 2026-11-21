@@ -46,6 +46,25 @@ data class PlayStat(
     val app: String? = null,
 )
 
+/** Apple のカタログで実在を確かめたおすすめ。表示名も Apple 上の表記 */
+@Serializable
+data class Suggestion(
+    val artistId: Long,
+    val name: String,
+    val genre: String? = null,
+    val url: String? = null,
+)
+
+/** 候補名を Apple のカタログで引いた結果。同じ候補を何度も問い合わせないため。見つからなければ artistId は null */
+@Serializable
+data class CatalogLookup(
+    val artistId: Long? = null,
+    val name: String? = null,
+    val genre: String? = null,
+    val url: String? = null,
+    val checkedAt: Long = 0,
+)
+
 @Serializable
 data class AppState(
     val artists: List<Artist> = emptyList(),
@@ -57,4 +76,12 @@ data class AppState(
     /** 音楽アプリ（パッケージ名）ごとの再生回数。新譜をどのアプリで開くかに使う */
     val appPlays: Map<String, Int> = emptyMap(),
     val lastCheck: Long = 0,
+    val suggestions: List<Suggestion> = emptyList(),
+    /** 取ったときの登録アーティストの組み合わせ（SuggestionPolicy.key） */
+    val suggestionsKey: String? = null,
+    val suggestionsAt: Long = 0,
+    /** 「興味なし」にしたおすすめの artistId。次からも出さない */
+    val dismissedSuggestions: List<Long> = emptyList(),
+    /** 正規化した候補名 → カタログで引いた結果 */
+    val catalogLookups: Map<String, CatalogLookup> = emptyMap(),
 )

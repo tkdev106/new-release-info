@@ -64,4 +64,9 @@
     <string name="notif_title_upcoming">%1$sの新譜がリリースされます</string>
     <string name="notif_text">「%1$s」%2$s · %3$s</string>
     <string name="notif_summary">新譜 %d件</string>
+
+    <string name="suggestions">AI のおすすめ</string>
+    <string name="suggestions_loading">おすすめを探しています…</string>
+    <string name="suggestions_error">いまはおすすめを表示できません</string>
+    <string name="not_interested">興味なし</string>
 </resources>
