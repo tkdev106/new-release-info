@@ -4,7 +4,7 @@
 export const MAX_INPUT_ARTISTS = 30;
 export const MAX_NAME_LENGTH = 100;
 export const MAX_SUGGESTIONS = 15;
-// プロンプトや検証を変えたら上げる。古いキャッシュを使わないため
+// 検証のしかたを変えたら上げる。古いキャッシュを使わないため（指示文の変更はキーに自動で入る）
 export const PROMPT_VERSION = 3;
 
 // 制御文字・書式文字。再生中情報から来た名前には何が入っていてもおかしくないため除く
@@ -92,7 +92,8 @@ export function sanitizeSuggestions(raw, inputArtists) {
 /** 同じ好みの組み合わせなら同じキーになるよう、正規化して並べ替えてからハッシュする */
 export async function cacheKey(artists, providerId) {
   const names = artists.map(normalizeName).sort();
-  const input = JSON.stringify({ v: PROMPT_VERSION, provider: providerId, names });
+  // 指示文そのものも入れ、文面を変えたのに番号を上げ忘れても古い結果を返さないようにする
+  const input = JSON.stringify({ v: PROMPT_VERSION, system: SYSTEM_INSTRUCTION, provider: providerId, names });
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
