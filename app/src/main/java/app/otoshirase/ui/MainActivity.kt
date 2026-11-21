@@ -141,7 +141,7 @@ private fun Root(start: Tab) {
     }
 
     searchFor?.let { initial ->
-        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, onDismiss = { searchFor = null })
+        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, dismissed = state.dismissedSuggestions.toSet(), onDismiss = { searchFor = null })
     }
 }
 
@@ -360,7 +360,7 @@ private fun listenerGranted(ctx: android.content.Context) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, onDismiss: () -> Unit) {
+private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, dismissed: Set<Long>, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
     var query by remember { mutableStateOf(initial) }
@@ -448,7 +448,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (query.isBlank() && refresher != null) {
-                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added }
+                    // 取り直し中の一覧は保存前なので、興味なしにしたものもここで除く
+                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added || it.artistId in dismissed }
                     if (shown.isNotEmpty() || suggesting || suggestFailed) {
                         item { SectionLabel(stringResource(R.string.suggestions)) }
                     }
