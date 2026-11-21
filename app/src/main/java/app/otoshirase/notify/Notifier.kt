@@ -21,11 +21,15 @@ import app.otoshirase.ui.releaseIntent
 object Notifier {
     private const val CHANNEL = "releases"
     private const val GROUP = "app.otoshirase.RELEASES"
+    /** 新譜以外のお知らせ。新譜の通知とは別にオフにできるよう分ける */
+    const val CHANNEL_TIPS = "tips"
 
     fun createChannels(ctx: Context) {
         val ch = NotificationChannel(CHANNEL, ctx.getString(R.string.notif_channel), NotificationManager.IMPORTANCE_DEFAULT)
             .apply { description = ctx.getString(R.string.notif_channel_desc) }
-        ctx.getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
+        val tips = NotificationChannel(CHANNEL_TIPS, ctx.getString(R.string.notif_channel_tips), NotificationManager.IMPORTANCE_DEFAULT)
+            .apply { description = ctx.getString(R.string.notif_channel_tips_desc) }
+        ctx.getSystemService(NotificationManager::class.java).createNotificationChannels(listOf(ch, tips))
     }
 
     suspend fun notifyReleases(ctx: Context, releases: List<Release>) {

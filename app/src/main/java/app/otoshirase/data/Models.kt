@@ -33,6 +33,7 @@ data class Release(
     val trackCount: Int = 0,
     val foundAt: Long = System.currentTimeMillis(),
     val notified: Boolean = false, // 登録時の取り込み(false) か、新着として通知したか(true)
+    val releaseDayNotified: Boolean = false, // 発売予定だった作品の発売日に通知したか
 ) {
     val date: LocalDate? get() = releaseDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
     val upcoming: Boolean get() = date?.isAfter(LocalDate.now()) == true
@@ -73,6 +74,8 @@ data class AppState(
     val releases: List<Release> = emptyList(),
     val plays: List<PlayStat> = emptyList(),
     val ignored: List<String> = emptyList(),
+    /** 「新譜の通知を受け取りませんか？」で数え済みのアーティスト（小文字）。次はこれ以外が2組たまったら出す */
+    val promptedPlays: List<String> = emptyList(),
     /** 音楽アプリ（パッケージ名）ごとの再生回数。新譜をどのアプリで開くかに使う */
     val appPlays: Map<String, Int> = emptyMap(),
     val lastCheck: Long = 0,

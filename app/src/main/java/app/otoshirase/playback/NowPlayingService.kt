@@ -5,7 +5,9 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.service.notification.NotificationListenerService
+import app.otoshirase.data.PlaysPrompt
 import app.otoshirase.data.Store
+import app.otoshirase.notify.AndroidPlaysPromptNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +24,7 @@ class NowPlayingService : NotificationListenerService() {
     private val callbacks = mutableMapOf<MediaSession, MediaController.Callback>()
     private val lastTrack = mutableMapOf<String, String>()
     private var msm: MediaSessionManager? = null
+    private val promptNotifier by lazy { AndroidPlaysPromptNotifier(this) }
 
     private val musicApps = setOf(
         "com.apple.android.music",
@@ -90,7 +93,10 @@ class NowPlayingService : NotificationListenerService() {
         val track = "$artist\u0000$title"
         if (lastTrack[pkg] == track) return // 同じ曲のメタデータ更新は数えない
         lastTrack[pkg] = track
-        scope.launch { Store.recordPlay(artist, pkg) }
+        scope.launch {
+            Store.recordPlay(artist, pkg)
+            PlaysPrompt.check(Store, promptNotifier)
+        }
     }
 
     private data class MediaSession(val pkg: String, val token: Int)

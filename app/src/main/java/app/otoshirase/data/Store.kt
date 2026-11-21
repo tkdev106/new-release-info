@@ -11,7 +11,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 /** 端末内の JSON ファイル1つに全部保存するシンプルなストア */
-object Store {
+object Store : StateStore {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val mutex = Mutex()
     private val _state = MutableStateFlow(AppState())
@@ -32,7 +32,9 @@ object Store {
         _state.value = AppState()
     }
 
-    suspend fun update(transform: (AppState) -> AppState) = mutex.withLock {
+    override fun current(): AppState = _state.value
+
+    override suspend fun update(transform: (AppState) -> AppState): Unit = mutex.withLock {
         val next = transform(_state.value)
         _state.value = next
         withContext(Dispatchers.IO) {

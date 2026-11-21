@@ -5,12 +5,14 @@ import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.Release
+import app.otoshirase.data.ReleaseDay
 import app.otoshirase.data.Store
 import app.otoshirase.notify.Notifier
 import app.otoshirase.widget.ReleaseWidget
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.delay
 import java.time.LocalDate
+import java.time.ZoneId
 
 object Checker {
     /** 登録時に取り込む「最近のリリース」の範囲 */
@@ -25,8 +27,16 @@ object Checker {
             if (i > 0) delay(GAP_MS)
             runCatching { fresh += checkArtist(a) }
         }
-        Store.update { it.copy(lastCheck = System.currentTimeMillis()) }
-        Notifier.notifyReleases(ctx, fresh)
+        var released = emptyList<Release>()
+        Store.update { s ->
+            released = ReleaseDay.due(s.releases, LocalDate.now(), ZoneId.systemDefault())
+            val ids = released.map { it.id }.toSet()
+            s.copy(
+                lastCheck = System.currentTimeMillis(),
+                releases = s.releases.map { if (it.id in ids) it.copy(releaseDayNotified = true) else it },
+            )
+        }
+        Notifier.notifyReleases(ctx, fresh + released)
         runCatching { ReleaseWidget().updateAll(ctx) }
         return fresh
     }
