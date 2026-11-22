@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -322,7 +321,6 @@ private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd:
 }
 
 /** 頭文字の丸・名前・補足を並べた1行。アーティスト・よく聴く・検索結果で共通 */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PersonRow(
     name: String, detail: String?, image: String? = null,
