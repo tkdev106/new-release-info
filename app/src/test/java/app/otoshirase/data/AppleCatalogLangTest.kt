@@ -15,4 +15,15 @@ class AppleCatalogLangTest {
         assertEquals("en_us", AppleCatalog.lang(Locale.US))
         assertEquals("en_us", AppleCatalog.lang(Locale.FRANCE))
     }
+
+    @Test
+    fun `日本語の端末では日本ストアを使う`() {
+        assertEquals("JP", AppleCatalog.country(Locale.JAPAN))
+    }
+
+    @Test
+    fun `日本語以外の端末では米国ストアを使う`() {
+        assertEquals("US", AppleCatalog.country(Locale.US))
+        assertEquals("US", AppleCatalog.country(Locale.UK))
+    }
 }

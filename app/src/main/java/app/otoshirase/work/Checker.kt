@@ -77,7 +77,8 @@ object Checker {
             s.copy(
                 artists = s.artists.map { if (it.id == a.id) updatedArtist else it },
                 seen = s.seen + (a.id to (seenSet + items.mapNotNull { it.collectionId }).toList()),
-                releases = (s.releases + added)
+                // 端末の言語を変えてストアが変わったときも、単独名義の作品のアーティスト名を揃える
+                releases = (s.releases.map { if (it.artistId == a.id && it.artistName == current.name) it.copy(artistName = updatedArtist.name) else it } + added)
                     .sortedWith(compareByDescending<Release> { it.releaseDate ?: "" }.thenByDescending { it.foundAt })
                     .take(400),
             )

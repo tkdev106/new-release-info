@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit
  * 目安のレート制限は 20 リクエスト/分 程度なので、連続呼び出しは間隔を空ける。
  */
 object AppleCatalog {
-    const val COUNTRY = "JP"
 
     val http: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -47,8 +46,9 @@ object AppleCatalog {
     private suspend fun get(path: String, params: Map<String, String>): Resp = withContext(Dispatchers.IO) {
         val url = "https://itunes.apple.com/$path".toHttpUrl().newBuilder().apply {
             params.forEach { (k, v) -> addQueryParameter(k, v) }
-            addQueryParameter("country", COUNTRY)
-            addQueryParameter("lang", lang(Locale.getDefault()))
+            val locale = Locale.getDefault()
+            addQueryParameter("country", country(locale))
+            addQueryParameter("lang", lang(locale))
         }.build()
         val req = Request.Builder().url(url).header("User-Agent", "Otoshirase/0.1 (Android)").build()
         http.newCall(req).execute().use { r ->
@@ -58,9 +58,12 @@ object AppleCatalog {
     }
 
     /**
-     * 日本ストアのままでも lang を変えるとジャンル名だけが英語になる（作品名・アーティスト名は変わらないことを確かめた）。
-     * 日本語以外の端末で「オルタナティブ」と出ないよう、端末の言語に合わせる
+     * 日本ストアは海外のアーティスト名をカタカナで返す（Ride → ライド）。lang では変わらないので、
+     * 日本語以外の端末では米国ストアを使い、アーティスト名もジャンル名も英字で揃える。
+     * アーティスト ID と作品 ID はストアをまたいで同じなので、登録済みのデータはそのまま使える
      */
+    fun country(locale: Locale): String = if (locale.language == "ja") "JP" else "US"
+
     fun lang(locale: Locale): String = if (locale.language == "ja") "ja_jp" else "en_us"
 
     suspend fun searchArtists(term: String): List<Item> =

@@ -23,7 +23,7 @@ object ArtistImages {
     suspend fun fetch(artistId: Long): String? = withContext(Dispatchers.IO) {
         runCatching {
             val req = Request.Builder()
-                .url("https://music.apple.com/jp/artist/$artistId")
+                .url("https://music.apple.com/${AppleCatalog.country(java.util.Locale.getDefault()).lowercase()}/artist/$artistId")
                 .header("User-Agent", "Mozilla/5.0 (Linux; Android 15)")
                 .build()
             AppleCatalog.http.newCall(req).execute().use { r ->
