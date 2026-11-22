@@ -53,6 +53,19 @@ object Store : StateStore {
         )
     }
 
+    /** 表示名をカタカナ表記と英字表記で切り替える */
+    suspend fun setPreferLocalName(id: Long, preferLocal: Boolean) = update { s ->
+        val a = s.artists.firstOrNull { it.id == id } ?: return@update s
+        val name = ArtistNames.choose(a.localName, a.officialName, preferLocal) ?: a.name
+        s.copy(
+            artists = s.artists.map {
+                if (it.id == id) it.copy(name = name, preferLocalName = preferLocal, aliases = (it.aliases + it.name).distinct() - name) else it
+            },
+            // 作品側に保存したアーティスト名も揃える（共演名義はそのまま）
+            releases = s.releases.map { if (it.artistId == id && it.artistName == a.name) it.copy(artistName = name) else it },
+        )
+    }
+
     suspend fun removeArtist(id: Long) = update { s ->
         s.copy(
             artists = s.artists.filterNot { it.id == id },

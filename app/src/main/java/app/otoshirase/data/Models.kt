@@ -13,6 +13,9 @@ data class Artist(
     val addedAt: Long = System.currentTimeMillis(),
     val image: String? = null,    // アーティスト画像（Apple Music のページから取得）
     val imageCheckedAt: Long = 0, // 画像を最後に取りに行った時刻。取れなかったときに毎回取りに行かないため
+    val localName: String? = null,    // 日本ストアで作品に付いている表記（例: ライド、羊文学）
+    val officialName: String? = null, // Apple 公式の表記（例: Ride、Hitsujibungaku）
+    val preferLocalName: Boolean = false, // カタカナ表記で出すと利用者が選んだか（スピッツなど）
 ) {
     fun matches(n: String): Boolean {
         val k = n.trim().lowercase()
