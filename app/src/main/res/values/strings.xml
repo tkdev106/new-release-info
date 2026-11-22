@@ -64,6 +64,9 @@
 
     <string name="date_unknown">Date unknown</string>
     <string name="today">Today</string>
+    <string name="date_upcoming">Out %1$s</string>
+    <string name="date_today">Out today</string>
+    <string name="date_released">Released %1$s</string>
     <string name="ago_now">just now</string>
     <string name="ago_min">%dm ago</string>
     <string name="ago_hour">%dh ago</string>
@@ -75,11 +78,9 @@
     <string name="notif_channel_tips_desc">Tips for using the app</string>
     <string name="plays_prompt_title">Get notified about new releases from %1$s and more?</string>
     <string name="plays_prompt_text">Add the artists you play most, and we\'ll notify you when new music is announced and on release day.</string>
-    <!-- %1$s: 種別（Single など） %2$s: 作品名 %3$s: 日付 -->
-    <string name="notif_text_upcoming">%1$s “%2$s” comes out %3$s</string>
-    <string name="notif_text_today">%1$s “%2$s” is out today</string>
-    <string name="notif_text_released">%1$s “%2$s” is out now</string>
-    <string name="notif_text_found">%1$s “%2$s” was released %3$s</string>
+    <string name="notif_title_released">New release from %1$s</string>
+    <string name="notif_title_upcoming">Upcoming release from %1$s</string>
+    <string name="notif_text">%1$s · %2$s · %3$s</string>
     <string name="notif_summary">%d new releases</string>
 
     <string name="suggestions">Suggested by AI</string>

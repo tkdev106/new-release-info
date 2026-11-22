@@ -6,13 +6,25 @@ import app.otoshirase.R
 import app.otoshirase.data.Release
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 /** 端末の言語に合わせた月日（ja: 11月10日 / en: Nov 10）。年が違えば年も付ける */
-fun monthDay(d: LocalDate): String {
+private fun monthDay(d: LocalDate): String {
     val locale = Locale.getDefault()
     val skeleton = if (d.year == LocalDate.now().year) "MMMd" else "yMMMd"
     return d.format(DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale))
+}
+
+/** 通知・ウィジェット用。発売前か後かも文言に含める */
+fun dateLabel(ctx: Context, r: Release): String {
+    val d = r.date ?: return ctx.getString(R.string.date_unknown)
+    val days = ChronoUnit.DAYS.between(LocalDate.now(), d)
+    return when {
+        days > 0 -> ctx.getString(R.string.date_upcoming, monthDay(d))
+        days == 0L -> ctx.getString(R.string.date_today)
+        else -> ctx.getString(R.string.date_released, monthDay(d))
+    }
 }
 
 /** アプリ内の一覧用。発売予定かどうかは見出しで分かるので、日付だけにする */

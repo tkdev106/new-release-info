@@ -56,6 +56,9 @@
 
     <string name="date_unknown">日付不明</string>
     <string name="today">今日</string>
+    <string name="date_upcoming">%1$s 発売予定</string>
+    <string name="date_today">本日リリース</string>
+    <string name="date_released">%1$s リリース</string>
     <string name="ago_now">たった今</string>
     <string name="ago_min">%d分前</string>
     <string name="ago_hour">%d時間前</string>
@@ -67,11 +70,10 @@
     <string name="notif_channel_tips_desc">アプリの便利な使い方</string>
     <string name="plays_prompt_title">%1$sなどの新譜を通知で受け取りませんか？</string>
     <string name="plays_prompt_text">よく聴くアーティストを登録すると、新譜の発売が決まったときと発売日に通知でお知らせします。</string>
-    <string name="notif_text_upcoming">%1$s「%2$s」が%3$sに発売されます</string>
-    <string name="notif_text_today">%1$s「%2$s」が本日発売されました</string>
-    <string name="notif_text_released">%1$s「%2$s」がリリースされました</string>
-    <string name="notif_text_found">%1$s「%2$s」（%3$s発売）が見つかりました</string>
-    <string name="notif_summary">%d件の新譜</string>
+    <string name="notif_title_released">%1$sの新譜がリリースされました</string>
+    <string name="notif_title_upcoming">%1$sの新譜がリリースされます</string>
+    <string name="notif_text">「%1$s」%2$s · %3$s</string>
+    <string name="notif_summary">新譜 %d件</string>
 
     <string name="suggestions">AI のおすすめ</string>
     <string name="suggestions_loading">おすすめを探しています…</string>
