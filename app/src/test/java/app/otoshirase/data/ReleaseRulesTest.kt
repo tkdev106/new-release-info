@@ -41,7 +41,7 @@ class ReleaseRulesTest {
     }
 
     @Test
-    fun `発売予定の作品にはNEWを付けない`() {
-        assertFalse(ReleaseRules.isNew(today.plusDays(1), today))
+    fun `発売予定の作品にもNEWを付ける`() {
+        assertTrue(ReleaseRules.isNew(today.plusDays(1), today))
     }
 }

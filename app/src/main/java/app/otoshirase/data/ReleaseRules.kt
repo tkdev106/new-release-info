@@ -13,7 +13,7 @@ object ReleaseRules {
      */
     fun notifyOnFind(date: LocalDate?, today: LocalDate): Boolean = date != null && !date.isBefore(today)
 
-    /** 一覧の NEW ラベル。発売から 1 か月以内のものだけに付ける（発売予定は見出しで分かるので付けない） */
+    /** 一覧の NEW ラベル。発売予定と、発売から 1 か月以内のものに付ける */
     fun isNew(date: LocalDate?, today: LocalDate): Boolean =
-        date != null && !date.isAfter(today) && !date.isBefore(today.minusDays(NEW_LABEL_DAYS))
+        date != null && !date.isBefore(today.minusDays(NEW_LABEL_DAYS))
 }
