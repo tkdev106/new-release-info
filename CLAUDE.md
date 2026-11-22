@@ -29,7 +29,7 @@
 ## 技術
 
 - Kotlin、Jetpack Compose（Material 3）、ウィジェットは Glance、定期チェックは WorkManager、通信は OkHttp、保存は kotlinx.serialization で `files/state.json`
-- 新譜データは Apple の iTunes Search API（日本ストア、無料・認証なし）。発売前の作品も載るので「発売予定」が分かる
+- 新譜データは Apple の iTunes Search API（端末が日本語なら日本ストア、それ以外は米国ストア。無料・認証なし）。発売前の作品も載るので「発売予定」が分かる
 - アーティスト画像は Apple Music の公開ページの `og:image`（`data/ArtistImages.kt`）。公式 API ではないので、取れなければ最新作のジャケット → 頭文字の順で代用する
 - 新譜をタップしたら、再生回数がいちばん多い音楽アプリの検索画面で開く（`data/MusicApps.kt`）。開けなければ Apple Music の URL
 
