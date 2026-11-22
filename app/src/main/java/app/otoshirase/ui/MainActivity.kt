@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -48,11 +49,13 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import app.otoshirase.App
+import app.otoshirase.data.AppState
+import app.otoshirase.data.AppleArtistCatalog
 import app.otoshirase.data.AppleCatalog
+import app.otoshirase.data.PlayArtistResolver
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.unregisteredPlays
-import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
 import app.otoshirase.data.Suggestion
@@ -136,7 +139,7 @@ private fun Root(start: Tab) {
             when (tab) {
                 Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
                 Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
-                Tab.Plays -> PlaysScreen(state.unregisteredPlays(), onAdd = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
+                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
             }
         }
     }
@@ -314,8 +317,14 @@ private fun PersonRow(name: String, detail: String?, image: String? = null, onCl
 // ---------------- よく聴く ----------------
 
 @Composable
-private fun PlaysScreen(plays: List<PlayStat>, onAdd: (String) -> Unit, onIgnore: (String) -> Unit) {
+private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (String) -> Unit) {
     val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // その場で登録した行は一覧から消さずに「登録済み」で残し、間違えたらすぐ戻せるようにする
+    val added = remember { mutableStateMapOf<String, Long>() }
+    val resolving = remember { mutableStateListOf<String>() }
+    val unregistered = state.unregisteredPlays()
+    val plays = state.plays.filter { it in unregistered || it.name in added }
     var granted by remember { mutableStateOf(listenerGranted(ctx)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 
@@ -337,10 +346,44 @@ private fun PlaysScreen(plays: List<PlayStat>, onAdd: (String) -> Unit, onIgnore
                 p.name, "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}",
                 image = artistImageByName(p.name),
             ) {
-                IconButton(onClick = { onIgnore(p.name) }) {
-                    Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                val id = added[p.name]
+                when {
+                    id != null -> {
+                        Text(stringResource(R.string.added), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+                        PillButton(stringResource(R.string.remove)) {
+                            added -= p.name
+                            App.scope.launch {
+                                Store.removeArtist(id)
+                                runCatching { ReleaseWidget().updateAll(ctx) }
+                            }
+                        }
+                    }
+                    p.name in resolving -> Box(Modifier.padding(horizontal = 20.dp)) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    }
+                    else -> {
+                        IconButton(onClick = { onIgnore(p.name) }) {
+                            Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        PillButton(stringResource(R.string.add)) {
+                            resolving += p.name
+                            scope.launch {
+                                val r = PlayArtistResolver(AppleArtistCatalog).resolve(p.name)
+                                resolving -= p.name
+                                when (r) {
+                                    is PlayArtistResolver.Result.Found -> {
+                                        added[p.name] = r.artist.id
+                                        registerArtist(ctx, r.artist.id, r.artist.name, r.artist.genre, r.artist.url, p.name)
+                                    }
+                                    // 別名義で載っていることがあるので、候補から選んでもらう
+                                    PlayArtistResolver.Result.NotFound -> onSearch(p.name)
+                                    PlayArtistResolver.Result.Failed ->
+                                        Toast.makeText(ctx, R.string.add_error, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
                 }
-                PillButton(stringResource(R.string.add)) { onAdd(p.name) }
             }
         }
     }
@@ -399,21 +442,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         // 一覧が入れ替わる拍子に検索欄へフォーカスが移り、キーボードが出てしまうのを防ぐ
         focusManager.clearFocus()
         added += id
-        val artist = Artist(
-            id = id,
-            name = name,
-            genre = genre,
-            url = url,
-            aliases = listOfNotNull(alias).filter { it.isNotBlank() },
-            // 検索結果で取れていれば、登録時に取り直さない
-            image = ArtistImages.peek(id),
-            imageCheckedAt = if (ArtistImages.peek(id) != null) System.currentTimeMillis() else 0,
-        )
-        App.scope.launch {
-            Store.addArtist(artist)
-            runCatching { Checker.checkArtist(artist) }
-            runCatching { ReleaseWidget().updateAll(ctx) }
-        }
+        registerArtist(ctx, id, name, genre, url, alias)
     }
 
     fun remove(id: Long) {
@@ -523,6 +552,25 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
 }
 
 // ---------------- 共通 ----------------
+
+/** 登録して、その人の新譜をすぐ取りに行く。画面を閉じても続くようにアプリのスコープで行う */
+private fun registerArtist(ctx: android.content.Context, id: Long, name: String, genre: String?, url: String?, alias: String?) {
+    val artist = Artist(
+        id = id,
+        name = name,
+        genre = genre,
+        url = url,
+        aliases = listOfNotNull(alias).filter { it.isNotBlank() && !it.equals(name, ignoreCase = true) },
+        // 検索結果で取れていれば、登録時に取り直さない
+        image = ArtistImages.peek(id),
+        imageCheckedAt = if (ArtistImages.peek(id) != null) System.currentTimeMillis() else 0,
+    )
+    App.scope.launch {
+        Store.addArtist(artist)
+        runCatching { Checker.checkArtist(artist) }
+        runCatching { ReleaseWidget().updateAll(ctx) }
+    }
+}
 
 @Composable
 private fun Empty(message: String, action: Pair<String, () -> Unit>?, title: String? = null) {
