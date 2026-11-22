@@ -416,6 +416,15 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         }
     }
 
+    fun remove(id: Long) {
+        focusManager.clearFocus()
+        added -= id
+        App.scope.launch {
+            Store.removeArtist(id)
+            runCatching { ReleaseWidget().updateAll(ctx) }
+        }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -501,6 +510,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                     PersonRow(item.artistName.orEmpty(), item.primaryGenreName, image = artistImageById(id)) {
                         if (done) {
                             Text(stringResource(R.string.added), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+                            // 間違えて登録してもその場で戻せるようにする。登録し直せばすぐ戻るので確認は出さない
+                            PillButton(stringResource(R.string.remove)) { remove(id) }
                         } else PillButton(stringResource(R.string.add)) {
                             add(id, item.artistName.orEmpty(), item.primaryGenreName, item.artistLinkUrl?.substringBefore("?uo="), initial)
                         }
