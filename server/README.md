@@ -65,7 +65,7 @@ Content-Type: application/json
 
 ## 自動デプロイ（GitHub Actions）
 
-`main` に `server/` の変更が入ると、`.github/workflows/deploy-worker.yml` がテストを走らせてから `wrangler deploy` する。Actions の画面から手動でも流せる（Run workflow）。`GEMINI_API_KEY`・`APP_TOKEN` は Worker 側の secret のままで、デプロイでは変わらない。
+`main` に `server/` の変更が入ると、`.github/workflows/deploy-worker.yml` がテストを走らせてから `wrangler deploy` する。PR ではデプロイせず、secrets でログインできることと組み上がること（`--dry-run`）だけを確かめる。Actions の画面から手動でも流せる（Run workflow）。`GEMINI_API_KEY`・`APP_TOKEN` は Worker 側の secret のままで、デプロイでは変わらない。
 
 使う前に一度だけ、リポジトリの secrets を登録する（本人の作業）。
 
