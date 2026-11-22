@@ -7,17 +7,19 @@
     <string name="widget_style_clear_white">透過・白い文字</string>
     <string name="widget_style_clear_black">透過・黒い文字</string>
     <string name="done">完了</string>
-    <string name="widget_upcoming">%1$s 発売</string>
     <string name="widget_empty">アーティストを登録すると、新譜がここに表示されます</string>
 
 
     <string name="checking">確認中…</string>
-    <string name="checked_never">未確認</string>
+    <string name="checked_never">まだ確認していません</string>
     <string name="checked_ago">最終確認 %1$s</string>
-    <string name="check_now">今すぐ確認</string>
+    <string name="check_now">新譜を確認</string>
+    <string name="offline">ネットワークに接続されていません</string>
+    <string name="check_failed">新譜を確認できませんでした</string>
     <plurals name="artist_count">
-        <item quantity="other">%d組</item>
+        <item quantity="other">%d組のアーティスト</item>
     </plurals>
+    <string name="plays_subtitle">よく聴く未登録のアーティスト</string>
 
     <string name="releases_empty">新しいリリースはまだありません</string>
     <string name="releases_empty_no_artists">アーティストを登録すると\n新譜がここに表示されます</string>
@@ -25,26 +27,27 @@
     <string name="section_upcoming">発売予定</string>
     <string name="section_recent">最近のリリース</string>
 
-    <string name="artists_empty">まだ登録がありません</string>
+    <string name="artists_empty">アーティストが登録されていません</string>
     <string name="remove">削除</string>
-    <string name="remove_title">%1$s を削除しますか？</string>
+    <string name="remove_title">%1$sを削除しますか？</string>
     <string name="remove_body">このアーティストの新譜も一覧から消えます。</string>
     <string name="cancel">キャンセル</string>
 
-    <string name="plays_intro_title">アーティストを自動で集める</string>
-    <string name="plays_intro_body">有効にすると、あなたが再生した音楽から\nアーティストを自動で取り込みます。\n次の画面で「通知へのアクセス」を\nオンにしてください。</string>
+    <string name="plays_intro_title">よく聴くアーティストを表示</string>
+    <string name="plays_intro_body">再生した音楽をもとに、よく聴くアーティストをここに表示します。次の画面で「通知へのアクセス」をオンにしてください。</string>
     <string name="allow">有効にする</string>
-    <string name="plays_empty">音楽を再生すると、ここに表示されます</string>
+    <string name="plays_empty">音楽を再生すると\nアーティストがここに表示されます</string>
     <plurals name="play_count">
-        <item quantity="other">%d曲</item>
+        <item quantity="other">%d回</item>
     </plurals>
     <string name="hide">非表示</string>
 
     <string name="add">登録</string>
     <string name="added">登録済み</string>
     <string name="search_hint">アーティスト名</string>
-    <string name="search_error">検索できませんでした。通信状況を確認してください。</string>
-    <string name="add_error">登録できませんでした。通信状況を確認してください。</string>
+    <string name="search_clear">消去</string>
+    <string name="search_error">検索できませんでした。ネットワークの接続を確認してください。</string>
+    <string name="add_error">登録できませんでした。ネットワークの接続を確認してください。</string>
     <string name="search_no_results">見つかりませんでした</string>
 
     <string name="kind_single">シングル</string>
@@ -63,9 +66,9 @@
     <string name="notif_channel">新譜</string>
     <string name="notif_channel_desc">登録したアーティストの新譜</string>
     <string name="notif_channel_tips">お知らせ</string>
-    <string name="notif_channel_tips_desc">アプリの使い方のおすすめ</string>
-    <string name="plays_prompt_title">%1$sなどの新譜情報の通知を受け取りませんか？</string>
-    <string name="plays_prompt_text">よく聴くアーティストを登録すると、発売予定がわかったときと発売日にプッシュ通知でお知らせします。</string>
+    <string name="notif_channel_tips_desc">アプリの便利な使い方</string>
+    <string name="plays_prompt_title">%1$sなどの新譜を通知で受け取りませんか？</string>
+    <string name="plays_prompt_text">よく聴くアーティストを登録すると、新譜の発売が決まったときと発売日に通知でお知らせします。</string>
     <string name="notif_title_released">%1$sの新譜がリリースされました</string>
     <string name="notif_title_upcoming">%1$sの新譜がリリースされます</string>
     <string name="notif_text">「%1$s」%2$s · %3$s</string>
@@ -73,10 +76,12 @@
 
     <string name="suggestions">AI のおすすめ</string>
     <string name="suggestions_loading">おすすめを探しています…</string>
-    <string name="suggestions_error">いまはおすすめを表示できません</string>
+    <string name="suggestions_error">おすすめを取得できませんでした。時間をおいてお試しください。</string>
     <string name="not_interested">興味なし</string>
+    <string name="suggestion_dismissed">おすすめから外しました</string>
+    <string name="undo">元に戻す</string>
     <string name="suggestions_refresh">おすすめを更新</string>
-    <string name="suggestions_hint">登録したアーティストをもとに、AI が似たアーティストを提案します</string>
+    <string name="suggestions_hint">登録したアーティストをもとに、AI が似たアーティストを提案します。</string>
     <string name="suggestions_find">おすすめを探す</string>
-    <string name="suggestions_need_artists">アーティストを登録すると、おすすめを探せます</string>
+    <string name="suggestions_need_artists">アーティストを登録すると、似たアーティストをおすすめします。</string>
 </resources>

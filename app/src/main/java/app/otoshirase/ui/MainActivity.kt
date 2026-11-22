@@ -2,10 +2,14 @@ package app.otoshirase.ui
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
@@ -56,7 +61,9 @@ import app.otoshirase.data.PlayArtistResolver
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.unregisteredPlays
+import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
+import app.otoshirase.data.ReleaseRules
 import app.otoshirase.data.Store
 import app.otoshirase.data.Suggestion
 import app.otoshirase.widget.ReleaseWidget
@@ -67,6 +74,7 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -74,10 +82,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (Build.VERSION.SDK_INT >= 33) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
         // 通知から開いたときは、その通知に関係する画面から始める
         val start = Tab.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_TAB) } ?: Tab.Releases
-        setContent { AppTheme { Root(start) } }
+        setContent { AppTheme { Root(start, ::askNotifications) } }
+    }
+
+    // 起動直後にいきなり求めても理由が伝わらないので、通知が要る場面になってから求める
+    private fun askNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     companion object {
@@ -97,30 +111,62 @@ private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
 }
 
 @Composable
-private fun Root(start: Tab) {
+private fun Root(start: Tab, askNotifications: () -> Unit) {
     val ctx = LocalContext.current
     val state by Store.state.collectAsState()
     var tab by rememberSaveable { mutableStateOf(start) }
     var searchFor by remember { mutableStateOf<String?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // 最初のタブ以外で戻ると、いきなりアプリが閉じて驚くので、まず最初のタブに戻す
+    BackHandler(enabled = tab != Tab.Releases && searchFor == null) { tab = Tab.Releases }
+
+    // 通知の許可は、初めてアーティストを登録したときと、よく聴くアーティストの集計を有効にしたときに求める
+    var hadArtists by remember { mutableStateOf(state.artists.isNotEmpty()) }
+    LaunchedEffect(state.artists.isNotEmpty()) {
+        if (state.artists.isNotEmpty() && !hadArtists) askNotifications()
+        hadArtists = state.artists.isNotEmpty()
+    }
+    var hadListener by remember { mutableStateOf(listenerGranted(ctx)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        val now = listenerGranted(ctx)
+        if (now && !hadListener) askNotifications()
+        hadListener = now
+    }
 
     val work by WorkManager.getInstance(ctx)
         .getWorkInfosForUniqueWorkFlow(CheckWorker.NOW).collectAsState(initial = emptyList())
     val checking = work.any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }
+    // 失敗を知らせるのは、この画面で押した確認だけ（前に失敗した記録で毎回出さない）
+    var pending by remember { mutableStateOf<java.util.UUID?>(null) }
+    LaunchedEffect(work, pending) {
+        val info = work.firstOrNull { it.id == pending } ?: return@LaunchedEffect
+        if (!info.state.isFinished) return@LaunchedEffect
+        pending = null
+        if (info.state == WorkInfo.State.FAILED) snackbar.showSnackbar(ctx.getString(R.string.check_failed))
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             Header(
                 title = stringResource(tab.label),
                 subtitle = when (tab) {
                     Tab.Releases -> if (checking) stringResource(R.string.checking) else checkedLabel(ctx, state.lastCheck)
                     Tab.Artists -> pluralStringResource(R.plurals.artist_count, state.artists.size, state.artists.size)
-                    Tab.Plays -> null
+                    Tab.Plays -> stringResource(R.string.plays_subtitle)
                 },
             ) {
                 when (tab) {
                     Tab.Releases -> CircleButton(Icons.Default.Refresh, stringResource(R.string.check_now), enabled = !checking && state.artists.isNotEmpty()) {
-                        CheckWorker.runNow(ctx)
+                        // 通信できないまま確認を始めると、つながるまで「確認中」のまま止まって見える
+                        if (online(ctx)) pending = CheckWorker.runNow(ctx)
+                        else scope.launch {
+                            snackbar.currentSnackbarData?.dismiss()
+                            snackbar.showSnackbar(ctx.getString(R.string.offline))
+                        }
                     }
                     Tab.Artists -> CircleButton(Icons.Default.Add, stringResource(R.string.add_artist)) { searchFor = "" }
                     Tab.Plays -> {}
@@ -171,6 +217,8 @@ private fun Header(title: String, subtitle: String?, actions: @Composable RowSco
 private fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
     val c = MaterialTheme.colorScheme
     val pill = RoundedCornerShape(50)
+    // 文字を大きくしている端末では 3 つのラベルが横に収まらないので、選んでいるタブだけ文字を出す
+    val compact = LocalDensity.current.fontScale > 1.15f
     Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 8.dp, bottom = 12.dp), contentAlignment = Alignment.Center) {
         Row(
             Modifier.clip(pill).background(c.surfaceContainer).padding(4.dp),
@@ -185,9 +233,14 @@ private fun TabBar(current: Tab, onSelect: (Tab) -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val tint = if (selected) c.onSecondaryContainer else c.onSurfaceVariant
-                    Icon(t.icon, null, Modifier.size(18.dp), tint = tint)
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(t.label), style = MaterialTheme.typography.labelLarge, color = tint)
+                    val label = stringResource(t.label)
+                    if (compact && !selected) {
+                        Icon(t.icon, label, Modifier.size(18.dp), tint = tint)
+                    } else {
+                        Icon(t.icon, null, Modifier.size(18.dp), tint = tint)
+                        Spacer(Modifier.width(6.dp))
+                        Text(label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1, softWrap = false)
+                    }
                 }
             }
         }
@@ -245,7 +298,7 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("${kindLabel(ctx, r.kind)} · ${shortDate(ctx, r)}", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                if (r.notified) {
+                if (ReleaseRules.isNew(r.date, LocalDate.now())) {
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.badge_new), style = MaterialTheme.typography.labelSmall, color = c.onPrimary,
@@ -287,7 +340,7 @@ private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd:
                 TextButton(onClick = {
                     App.scope.launch { Store.removeArtist(a.id); ReleaseWidget().updateAll(ctx) }
                     confirm = null
-                }) { Text(stringResource(R.string.remove)) }
+                }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.remove)) }
             },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -324,7 +377,9 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
     val added = remember { mutableStateMapOf<String, Long>() }
     val resolving = remember { mutableStateListOf<String>() }
     val unregistered = state.unregisteredPlays()
+    // 保存順に頼らず、よく聴く順（同じ回数なら最近聴いた順）に並べる
     val plays = state.plays.filter { it in unregistered || it.name in added }
+        .sortedWith(compareByDescending<PlayStat> { it.count }.thenByDescending { it.lastPlayed })
     var granted by remember { mutableStateOf(listenerGranted(ctx)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 
@@ -448,6 +503,19 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         registerArtist(ctx, id, name, genre, url, alias)
     }
 
+    val snackbar = remember { SnackbarHostState() }
+    val sheetScope = rememberCoroutineScope()
+    // 押した瞬間に消えるので、押し間違えたときにその場で戻せるようにする。短いと押す前に消えてしまう
+    fun dismiss(sg: Suggestion) {
+        val index = suggestions.indexOfFirst { it.artistId == sg.artistId }
+        App.scope.launch { Store.dismissSuggestion(sg.artistId) }
+        sheetScope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val r = snackbar.showSnackbar(ctx.getString(R.string.suggestion_dismissed), ctx.getString(R.string.undo), duration = SnackbarDuration.Long)
+            if (r == SnackbarResult.ActionPerformed) App.scope.launch { Store.restoreSuggestion(sg, index) }
+        }
+    }
+
     fun remove(id: Long) {
         focusManager.clearFocus()
         added -= id
@@ -477,6 +545,14 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.onSurface),
                         cursorBrush = SolidColor(c.primary),
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                    )
+                }
+                if (query.isNotEmpty()) {
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        Icons.Default.Close, stringResource(R.string.search_clear),
+                        Modifier.size(20.dp).clip(RoundedCornerShape(50)).clickable { query = ""; focus.requestFocus() },
+                        tint = c.onSurfaceVariant,
                     )
                 }
             }
@@ -511,20 +587,23 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                         }
                         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                             Text(stringResource(note), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                            Spacer(Modifier.height(10.dp))
-                            FilledTonalButton(
-                                onClick = { App.scope.launch { refresher.refresh() } },
-                                enabled = !suggesting && registered.isNotEmpty(),
-                            ) {
-                                Icon(painterResource(R.drawable.ic_sparkle), null, Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.suggestions_find))
+                            // 登録が無いうちは押しても何もできないので、ボタン自体を出さない
+                            if (registered.isNotEmpty()) {
+                                Spacer(Modifier.height(10.dp))
+                                FilledTonalButton(
+                                    onClick = { App.scope.launch { refresher.refresh() } },
+                                    enabled = !suggesting,
+                                ) {
+                                    Icon(painterResource(R.drawable.ic_sparkle), null, Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(stringResource(R.string.suggestions_find))
+                                }
                             }
                         }
                     }
                     items(shown, key = { "s" + it.artistId }) { sg ->
                         PersonRow(sg.name, sg.genre, image = artistImageById(sg.artistId)) {
-                            IconButton(onClick = { App.scope.launch { Store.dismissSuggestion(sg.artistId) } }) {
+                            IconButton(onClick = { dismiss(sg) }) {
                                 Icon(Icons.Default.Close, stringResource(R.string.not_interested), Modifier.size(18.dp), tint = c.onSurfaceVariant)
                             }
                             PillButton(stringResource(R.string.add)) { add(sg.artistId, sg.name, sg.genre, sg.url, null) }
@@ -552,6 +631,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                     }
                 }
             }
+            SnackbarHost(snackbar)
         }
     }
 }
@@ -596,6 +676,12 @@ private fun Empty(message: String, action: Pair<String, () -> Unit>?, title: Str
             PillButton(label, filled = true, onClick = onClick)
         }
     }
+}
+
+private fun online(ctx: android.content.Context): Boolean {
+    val cm = ctx.getSystemService(ConnectivityManager::class.java) ?: return true
+    val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+    return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
 }
 
 private fun open(ctx: android.content.Context, intent: Intent?) {

@@ -82,21 +82,27 @@ class ReleaseWidget : GlanceAppWidget() {
     /** 背景の種類ごとの色。透過では壁紙の上に文字が直接乗る */
     private class Palette(
         val background: ColorProvider, val title: ColorProvider, val text: ColorProvider,
-        val sub: ColorProvider, val accent: ColorProvider, val tile: ColorProvider,
+        val sub: ColorProvider, val tile: ColorProvider,
+        /** 透過のときの文字色と影の色。壁紙の明るい所・暗い所でも読めるよう、文字に影を付けて画像で描く */
+        val clear: ClearText? = null,
     )
+
+    private class ClearText(val text: Int, val sub: Int, val shadow: Int)
 
     @Composable
     private fun palette(style: WidgetStyle): Palette {
         val c = GlanceTheme.colors
         return when (style) {
-            WidgetStyle.Standard -> Palette(c.widgetBackground, c.primary, c.onSurface, c.onSurfaceVariant, c.primary, c.surfaceVariant)
+            WidgetStyle.Standard -> Palette(c.widgetBackground, c.primary, c.onSurface, c.onSurfaceVariant, c.surfaceVariant)
             WidgetStyle.ClearWhite -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color.White), ColorProvider(Color.White),
-                ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White), ColorProvider(Color.White.copy(alpha = 0.18f)),
+                ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White.copy(alpha = 0.18f)),
+                ClearText(0xFFFFFFFF.toInt(), 0xE6FFFFFF.toInt(), 0x99000000.toInt()),
             )
             WidgetStyle.ClearBlack -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0xFF1B1B1F)),
-                ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
+                ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
+                ClearText(0xFF1B1B1F.toInt(), 0xE61B1B1F.toInt(), 0x99FFFFFF.toInt()),
             )
         }
     }
@@ -106,10 +112,10 @@ class ReleaseWidget : GlanceAppWidget() {
         val size = LocalSize.current
         val openApp = actionStartActivity<MainActivity>()
         Column(GlanceModifier.fillMaxSize().background(p.background).cornerRadius(24.dp).padding(PAD.dp)) {
-            Text(
-                context.getString(R.string.widget_label),
-                style = TextStyle(color = p.title, fontWeight = FontWeight.Medium, fontSize = 14.sp),
-                modifier = GlanceModifier.clickable(openApp),
+            Label(
+                context, context.getString(R.string.widget_label), 14f, bold = true,
+                color = p.title, clearColor = p.clear?.text, p = p,
+                widthDp = (size.width.value - PAD * 2).toInt(), modifier = GlanceModifier.clickable(openApp),
             )
             Spacer(GlanceModifier.height(GAP.dp))
             if (releases.isEmpty()) {
@@ -124,14 +130,14 @@ class ReleaseWidget : GlanceAppWidget() {
             Row(GlanceModifier.fillMaxWidth()) {
                 releases.take(layout.count).forEachIndexed { i, r ->
                     if (i > 0) Spacer(GlanceModifier.width(GAP.dp))
-                    Item(context, r, art[r.id], layout.image, p)
+                    Item(context, r, art[r.id], layout.image, layout.showText, p)
                 }
             }
         }
     }
 
     @Composable
-    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int, p: Palette) {
+    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int, showText: Boolean, p: Palette) {
         val open = releaseIntent(context, r)
         Column(
             GlanceModifier.width(imageDp.dp).let { m -> if (open != null) m.clickable(actionStartActivity(open)) else m },
@@ -147,34 +153,63 @@ class ReleaseWidget : GlanceAppWidget() {
                     )
                 }
             }
+            if (!showText) return@Column
             Spacer(GlanceModifier.height(6.dp))
-            Text(r.title, maxLines = 1, style = TextStyle(color = p.text, fontWeight = FontWeight.Medium, fontSize = 12.sp))
-            Text(
-                if (r.upcoming) context.getString(R.string.widget_upcoming, shortDate(context, r)) else shortDate(context, r),
-                maxLines = 1,
-                style = TextStyle(color = if (r.upcoming) p.accent else p.sub, fontSize = 11.sp),
-            )
+            Label(context, r.title, 12f, bold = true, color = p.text, clearColor = p.clear?.text, p = p, widthDp = imageDp)
+            // ジャケットと作品名だけでは誰の作品か分からない
+            Label(context, r.artistName, 11f, bold = false, color = p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp)
+            // 発売予定かどうかは日付で分かるので、発売済みと見た目を分けない
+            Label(context, shortDate(context, r), 11f, bold = false, color = p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp)
         }
     }
 
-    private data class Layout(val count: Int, val image: Int)
+    /** 1 行の文字。透過のときだけ影付きの画像で描く（Glance の文字には影を付けられないため） */
+    @Composable
+    private fun Label(
+        context: Context, text: String, sp: Float, bold: Boolean, color: ColorProvider, clearColor: Int?, p: Palette,
+        widthDp: Int, modifier: GlanceModifier = GlanceModifier,
+    ) {
+        val clear = p.clear
+        if (clear == null || clearColor == null) {
+            Text(
+                text, maxLines = 1, modifier = modifier,
+                style = TextStyle(color = color, fontWeight = if (bold) FontWeight.Medium else FontWeight.Normal, fontSize = sp.sp),
+            )
+            return
+        }
+        val bitmap = ShadowText.render(context, text, sp, clearColor, clear.shadow, bold, widthDp)
+        val density = context.resources.displayMetrics.density
+        Image(
+            ImageProvider(bitmap), contentDescription = text, contentScale = ContentScale.Fit,
+            modifier = modifier.size(widthDp.dp, (bitmap.height / density).dp),
+        )
+    }
 
-    /** 高さから画像の大きさを、幅から並べる数を決める */
+    private data class Layout(val count: Int, val image: Int, val showText: Boolean)
+
+    /**
+     * 高さから画像の大きさを、幅から並べる数を決める。
+     * 文字の 3 行まで入らない低いウィジェットでは文字を出さず、ジャケットを残りの高さに収める
+     * （無理に入れると、はみ出してジャケットの下が切れる）
+     */
     private fun layoutFor(size: DpSize): Layout {
         val w = size.width.value - PAD * 2
-        val h = size.height.value - PAD * 2 - HEADER - GAP - TEXT
-        val base = h.coerceIn(48f, 104f)
+        val room = size.height.value - PAD * 2 - HEADER - GAP
+        val showText = room - TEXT >= MIN_IMAGE
+        val base = (if (showText) room - TEXT else room).coerceIn(24f, 104f)
         val count = ((w + GAP) / (base + GAP)).toInt().coerceIn(1, MAX_ITEMS)
         val image = ((w - GAP * (count - 1)) / count).coerceAtMost(base)
-        return Layout(count, image.toInt())
+        return Layout(count, image.toInt(), showText)
     }
 
     private companion object {
         const val MAX_ITEMS = 6
+        const val MIN_IMAGE = 48f
         const val PAD = 14
         const val GAP = 10
         const val HEADER = 18
-        const val TEXT = 40
+        // 作品名・アーティスト名・日付の 3 行
+        const val TEXT = 56
     }
 }
 

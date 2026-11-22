@@ -32,7 +32,7 @@ data class Release(
     val artwork: String?,
     val trackCount: Int = 0,
     val foundAt: Long = System.currentTimeMillis(),
-    val notified: Boolean = false, // 登録時の取り込み(false) か、新着として通知したか(true)
+    val notified: Boolean = false, // 見つけたときに通知したか（登録時の取り込みと、発売済みであとから見つけたものは false）
     val releaseDayNotified: Boolean = false, // 発売予定だった作品の発売日に通知したか
 ) {
     val date: LocalDate? get() = releaseDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }

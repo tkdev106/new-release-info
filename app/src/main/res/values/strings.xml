@@ -8,7 +8,6 @@
     <string name="widget_style_clear_white">Transparent, white text</string>
     <string name="widget_style_clear_black">Transparent, black text</string>
     <string name="done">Done</string>
-    <string name="widget_upcoming">Out %1$s</string>
     <string name="widget_empty">Add artists in the app to see their releases here</string>
 
     <string name="tab_releases" translatable="false">New Releases</string>
@@ -19,13 +18,16 @@
     <string name="checked_never">Not checked yet</string>
     <string name="checked_ago">Checked %1$s</string>
     <string name="check_now">Check now</string>
+    <string name="offline">No network connection</string>
+    <string name="check_failed">Couldn\'t check for new releases</string>
     <plurals name="artist_count">
         <item quantity="one">%d artist</item>
         <item quantity="other">%d artists</item>
     </plurals>
+    <string name="plays_subtitle">Most played artists you haven\'t added</string>
 
     <string name="releases_empty">No new releases yet</string>
-    <string name="releases_empty_no_artists">Add artists and their new releases will appear here</string>
+    <string name="releases_empty_no_artists">Add artists to see\ntheir new releases here</string>
     <string name="add_artist">Add artist</string>
     <string name="section_upcoming">Upcoming</string>
     <string name="section_recent">Recent</string>
@@ -37,10 +39,10 @@
     <string name="remove_body">Their releases will also be removed from the list.</string>
     <string name="cancel">Cancel</string>
 
-    <string name="plays_intro_title">Collect your most-played artists</string>
-    <string name="plays_intro_body">Once on, artists are added here automatically from the music you play. Turn on notification access on the next screen.</string>
+    <string name="plays_intro_title">See your most-played artists</string>
+    <string name="plays_intro_body">Artists from the music you play will appear here. Turn on notification access on the next screen.</string>
     <string name="allow">Turn on</string>
-    <string name="plays_empty">Play some music and artists will show up here</string>
+    <string name="plays_empty">Play some music and\nyour artists will show up here</string>
     <plurals name="play_count">
         <item quantity="one">%d play</item>
         <item quantity="other">%d plays</item>
@@ -50,6 +52,7 @@
     <string name="add">Add</string>
     <string name="added">Added</string>
     <string name="search_hint">Artist name</string>
+    <string name="search_clear">Clear</string>
     <string name="search_error">Couldn\'t search. Check your connection.</string>
     <string name="add_error">Couldn\'t add. Check your connection.</string>
     <string name="search_no_results">No artists found</string>
@@ -71,7 +74,7 @@
     <string name="notif_channel">New releases</string>
     <string name="notif_channel_desc">New releases from your artists</string>
     <string name="notif_channel_tips">Tips</string>
-    <string name="notif_channel_tips_desc">Suggestions for using the app</string>
+    <string name="notif_channel_tips_desc">Tips for using the app</string>
     <string name="plays_prompt_title">Get notified about new releases from %1$s and more?</string>
     <string name="plays_prompt_text">Add the artists you play most, and we\'ll notify you when new music is announced and on release day.</string>
     <string name="notif_title_released">New release from %1$s</string>
@@ -81,10 +84,12 @@
 
     <string name="suggestions">Suggested by AI</string>
     <string name="suggestions_loading">Finding artists you might like…</string>
-    <string name="suggestions_error">Couldn\'t load suggestions right now.</string>
+    <string name="suggestions_error">Couldn\'t get suggestions. Try again later.</string>
     <string name="not_interested">Not interested</string>
+    <string name="suggestion_dismissed">Removed from suggestions</string>
+    <string name="undo">Undo</string>
     <string name="suggestions_refresh">Refresh suggestions</string>
-    <string name="suggestions_hint">AI suggests similar artists based on the ones you follow.</string>
+    <string name="suggestions_hint">AI suggests similar artists based on the ones you\'ve added.</string>
     <string name="suggestions_find">Find suggestions</string>
-    <string name="suggestions_need_artists">Follow an artist to get suggestions.</string>
+    <string name="suggestions_need_artists">Add an artist to get suggestions.</string>
 </resources>

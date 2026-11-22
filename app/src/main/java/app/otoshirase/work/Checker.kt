@@ -6,38 +6,45 @@ import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.Release
 import app.otoshirase.data.ReleaseDay
+import app.otoshirase.data.ReleaseRules
 import app.otoshirase.data.Store
 import app.otoshirase.notify.Notifier
 import app.otoshirase.widget.ReleaseWidget
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.delay
+import java.io.IOException
 import java.time.LocalDate
 import java.time.ZoneId
 
 object Checker {
     /** 登録時に取り込む「最近のリリース」の範囲 */
     private const val BASELINE_DAYS = 45L
-    /** 新しく見つかったものでも、これより古いものは過去作の追加登録とみなして通知しない */
+    /** 新しく見つかったものでも、これより古いものは過去作の追加登録とみなして一覧に入れない */
     private const val NEW_DAYS = 60L
     private const val GAP_MS = 3_200L
 
     suspend fun checkAll(ctx: Context): List<Release> {
         val fresh = mutableListOf<Release>()
-        Store.state.value.artists.forEachIndexed { i, a ->
+        val artists = Store.state.value.artists
+        var failures = 0
+        artists.forEachIndexed { i, a ->
             if (i > 0) delay(GAP_MS)
-            runCatching { fresh += checkArtist(a) }
+            runCatching { fresh += checkArtist(a) }.onFailure { failures++ }
         }
+        // 1 組も確かめられなかったのに「確認しました」と見せないため、確認日時を進めずに失敗として返す
+        val allFailed = artists.isNotEmpty() && failures == artists.size
         var released = emptyList<Release>()
         Store.update { s ->
             released = ReleaseDay.due(s.releases, LocalDate.now(), ZoneId.systemDefault())
             val ids = released.map { it.id }.toSet()
             s.copy(
-                lastCheck = System.currentTimeMillis(),
+                lastCheck = if (allFailed) s.lastCheck else System.currentTimeMillis(),
                 releases = s.releases.map { if (it.id in ids) it.copy(releaseDayNotified = true) else it },
             )
         }
         Notifier.notifyReleases(ctx, fresh + released)
         runCatching { ReleaseWidget().updateAll(ctx) }
+        if (allFailed) throw IOException("どのアーティストの新譜も取得できませんでした")
         return fresh
     }
 
@@ -59,7 +66,8 @@ object Checker {
             val currentNames = items.mapNotNull { i -> i.artistName?.let { i.collectionId!! to it } }.toMap()
             val added = items.asSequence()
                 .filter { it.collectionId !in seenSet }
-                .map { AppleCatalog.toRelease(current, it, notified = !baseline) }
+                .map { AppleCatalog.toRelease(current, it, notified = false) }
+                .map { r -> if (!baseline && ReleaseRules.notifyOnFind(r.date, today)) r.copy(notified = true) else r }
                 .filter { r -> r.date?.let { !it.isBefore(cutoff) } ?: true }
                 .filter { known.add(key(it)) } // 通常版/クリーン版などの重複を除く
                 .toList()

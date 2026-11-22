@@ -82,6 +82,13 @@ object Store : StateStore {
         )
     }
 
+    /** 興味なしを取り消して、元の位置に戻す */
+    suspend fun restoreSuggestion(sg: Suggestion, index: Int) = update { s ->
+        val list = if (s.suggestions.any { it.artistId == sg.artistId }) s.suggestions
+        else s.suggestions.toMutableList().apply { add(index.coerceIn(0, size), sg) }
+        s.copy(suggestions = list, dismissedSuggestions = s.dismissedSuggestions - sg.artistId)
+    }
+
     suspend fun ignorePlay(name: String) = update { s -> s.copy(ignored = (s.ignored + name).distinct()) }
 
     private val splitter = Regex("""\s+(?:feat\.?|ft\.|featuring|with|×)\s+|、""", RegexOption.IGNORE_CASE)
