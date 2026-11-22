@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,7 +51,6 @@ import app.otoshirase.App
 import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
-import app.otoshirase.data.ArtistNames
 import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
@@ -262,7 +260,6 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
 private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd: () -> Unit) {
     val ctx = LocalContext.current
     var confirm by remember { mutableStateOf<Artist?>(null) }
-    var naming by remember { mutableStateOf<Artist?>(null) }
     if (artists.isEmpty()) {
         Empty(stringResource(R.string.artists_empty), stringResource(R.string.add_artist) to onAdd)
         return
@@ -271,38 +268,12 @@ private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd:
         items(artists.sortedBy { it.name.lowercase() }, key = { it.id }) { a ->
             // 画像が取れていないアーティストは、最新作のジャケットで代用する
             val image = a.image ?: releases.firstOrNull { it.artistId == a.id }?.artwork
-            // 長押しで表示名を選べるのは、カタカナ表記と英字表記の両方があるときだけ
-            val onLongClick = if (ArtistNames.switchable(a.localName, a.officialName)) ({ naming = a }) else null
-            PersonRow(a.name, a.genre, image = image, onClick = { open(ctx, artistIntent(ctx, a)) }, onLongClick = onLongClick) {
+            PersonRow(a.name, a.genre, image = image, onClick = { open(ctx, artistIntent(ctx, a)) }) {
                 IconButton(onClick = { confirm = a }) {
                     Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
-    }
-    naming?.let { a ->
-        AlertDialog(
-            onDismissRequest = { naming = null },
-            title = { Text(stringResource(R.string.display_name)) },
-            text = {
-                Column {
-                    listOf(false to a.officialName.orEmpty(), true to a.localName.orEmpty()).forEach { (preferLocal, label) ->
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable {
-                                App.scope.launch { Store.setPreferLocalName(a.id, preferLocal); ReleaseWidget().updateAll(ctx) }
-                                naming = null
-                            }.padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = a.preferLocalName == preferLocal, onClick = null)
-                            Spacer(Modifier.width(12.dp))
-                            Text(label, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { naming = null }) { Text(stringResource(R.string.cancel)) } },
-        )
     }
     confirm?.let { a ->
         AlertDialog(
@@ -322,15 +293,11 @@ private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd:
 
 /** 頭文字の丸・名前・補足を並べた1行。アーティスト・よく聴く・検索結果で共通 */
 @Composable
-private fun PersonRow(
-    name: String, detail: String?, image: String? = null,
-    onClick: (() -> Unit)? = null, onLongClick: (() -> Unit)? = null,
-    trailing: @Composable RowScope.() -> Unit,
-) {
+private fun PersonRow(name: String, detail: String?, image: String? = null, onClick: (() -> Unit)? = null, trailing: @Composable RowScope.() -> Unit) {
     val c = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-            .let { if (onClick != null) it.combinedClickable(onClick = onClick, onLongClick = onLongClick) else it }
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

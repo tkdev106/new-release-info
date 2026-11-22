@@ -4,7 +4,6 @@ import android.content.Context
 import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
-import app.otoshirase.data.ArtistNames
 import app.otoshirase.data.Release
 import app.otoshirase.data.ReleaseDay
 import app.otoshirase.data.Store
@@ -57,37 +56,28 @@ object Checker {
             val cutoff = today.minusDays(if (baseline) BASELINE_DAYS else NEW_DAYS)
             val known = s.releases.filter { it.artistId == a.id }.map { key(it) }.toMutableSet()
 
-            // 作品に付いた表記（例: Hitsujibungaku → 羊文学）と公式表記から表示名を決める
-            val localName = items.mapNotNull { it.artistName }
-                .filterNot { it.contains(" & ") || it.contains(", ") }
-                .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
-            val officialName = disco.artist?.artistName
-            val display = ArtistNames.choose(localName ?: current.localName, officialName ?: current.officialName, current.preferLocalName)
-                ?: current.name
-            val named = current.copy(
-                name = display,
-                localName = localName ?: current.localName,
-                officialName = officialName ?: current.officialName,
-                aliases = (current.aliases + current.name + listOfNotNull(localName, officialName)).distinct() - display,
-            )
-
             val added = items.asSequence()
                 .filter { it.collectionId !in seenSet }
-                .map { AppleCatalog.toRelease(named, it, notified = !baseline) }
-                // 単独名義の作品はカタカナ表記でなく表示名で出す
-                .map { if (it.artistName == localName) it.copy(artistName = display) else it }
+                .map { AppleCatalog.toRelease(current, it, notified = !baseline) }
                 .filter { r -> r.date?.let { !it.isBefore(cutoff) } ?: true }
                 .filter { known.add(key(it)) } // 通常版/クリーン版などの重複を除く
                 .toList()
             fresh = added.filter { it.notified }
 
+            // Apple のカタログ上の表記（例: Hitsujibungaku → 羊文学）を表示名に使う
+            val localName = items.mapNotNull { it.artistName }
+                .filterNot { it.contains(" & ") || it.contains(", ") }
+                .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+            val renamed = if (localName != null && localName != current.name)
+                current.copy(name = localName, aliases = (current.aliases + current.name).distinct())
+            else current
             // 登録時と端末の言語が変わっていても、ジャンル名を今の言語に揃える
-            val updatedArtist = named.copy(genre = disco.artist?.primaryGenreName ?: named.genre)
+            val updatedArtist = renamed.copy(genre = disco.artist?.primaryGenreName ?: renamed.genre)
 
             s.copy(
                 artists = s.artists.map { if (it.id == a.id) updatedArtist else it },
                 seen = s.seen + (a.id to (seenSet + items.mapNotNull { it.collectionId }).toList()),
-                releases = (s.releases.map { if (it.artistId == a.id && it.artistName == localName) it.copy(artistName = display) else it } + added)
+                releases = (s.releases + added)
                     .sortedWith(compareByDescending<Release> { it.releaseDate ?: "" }.thenByDescending { it.foundAt })
                     .take(400),
             )

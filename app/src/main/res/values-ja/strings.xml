@@ -77,5 +77,4 @@
     <string name="suggestions_hint">登録したアーティストをもとに、AI が似たアーティストを提案します</string>
     <string name="suggestions_find">おすすめを探す</string>
     <string name="suggestions_need_artists">アーティストを登録すると、おすすめを探せます</string>
-    <string name="display_name">表示名</string>
 </resources>
