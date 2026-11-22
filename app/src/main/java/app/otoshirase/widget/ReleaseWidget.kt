@@ -82,7 +82,7 @@ class ReleaseWidget : GlanceAppWidget() {
     /** 背景の種類ごとの色。透過では壁紙の上に文字が直接乗る */
     private class Palette(
         val background: ColorProvider, val title: ColorProvider, val text: ColorProvider,
-        val sub: ColorProvider, val accent: ColorProvider, val tile: ColorProvider,
+        val sub: ColorProvider, val tile: ColorProvider,
         /** 透過のときの文字色と影の色。壁紙の明るい所・暗い所でも読めるよう、文字に影を付けて画像で描く */
         val clear: ClearText? = null,
     )
@@ -93,15 +93,15 @@ class ReleaseWidget : GlanceAppWidget() {
     private fun palette(style: WidgetStyle): Palette {
         val c = GlanceTheme.colors
         return when (style) {
-            WidgetStyle.Standard -> Palette(c.widgetBackground, c.primary, c.onSurface, c.onSurfaceVariant, c.primary, c.surfaceVariant)
+            WidgetStyle.Standard -> Palette(c.widgetBackground, c.primary, c.onSurface, c.onSurfaceVariant, c.surfaceVariant)
             WidgetStyle.ClearWhite -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color.White), ColorProvider(Color.White),
-                ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White), ColorProvider(Color.White.copy(alpha = 0.18f)),
+                ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White.copy(alpha = 0.18f)),
                 ClearText(0xFFFFFFFF.toInt(), 0xE6FFFFFF.toInt(), 0x99000000.toInt()),
             )
             WidgetStyle.ClearBlack -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0xFF1B1B1F)),
-                ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
+                ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
                 ClearText(0xFF1B1B1F.toInt(), 0xE61B1B1F.toInt(), 0x99FFFFFF.toInt()),
             )
         }
@@ -157,11 +157,8 @@ class ReleaseWidget : GlanceAppWidget() {
             Label(context, r.title, 12f, bold = true, color = p.text, clearColor = p.clear?.text, p = p, widthDp = imageDp)
             // ジャケットと作品名だけでは誰の作品か分からない
             Label(context, r.artistName, 11f, bold = false, color = p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp)
-            Label(
-                context,
-                if (r.upcoming) context.getString(R.string.widget_upcoming, shortDate(context, r)) else shortDate(context, r),
-                11f, bold = false, color = if (r.upcoming) p.accent else p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp,
-            )
+            // 発売予定かどうかは日付で分かるので、発売済みと見た目を分けない
+            Label(context, shortDate(context, r), 11f, bold = false, color = p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp)
         }
     }
 

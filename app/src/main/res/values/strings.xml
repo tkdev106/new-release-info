@@ -8,7 +8,6 @@
     <string name="widget_style_clear_white">Transparent, white text</string>
     <string name="widget_style_clear_black">Transparent, black text</string>
     <string name="done">Done</string>
-    <string name="widget_upcoming">Out %1$s</string>
     <string name="widget_empty">Add artists in the app to see their releases here</string>
 
     <string name="tab_releases" translatable="false">New Releases</string>
