@@ -6,6 +6,7 @@ import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.Release
 import app.otoshirase.data.ReleaseDay
+import app.otoshirase.data.ReleaseRules
 import app.otoshirase.data.Store
 import app.otoshirase.notify.Notifier
 import app.otoshirase.widget.ReleaseWidget
@@ -18,7 +19,7 @@ import java.time.ZoneId
 object Checker {
     /** 登録時に取り込む「最近のリリース」の範囲 */
     private const val BASELINE_DAYS = 45L
-    /** 新しく見つかったものでも、これより古いものは過去作の追加登録とみなして通知しない */
+    /** 新しく見つかったものでも、これより古いものは過去作の追加登録とみなして一覧に入れない */
     private const val NEW_DAYS = 60L
     private const val GAP_MS = 3_200L
 
@@ -65,7 +66,8 @@ object Checker {
             val currentNames = items.mapNotNull { i -> i.artistName?.let { i.collectionId!! to it } }.toMap()
             val added = items.asSequence()
                 .filter { it.collectionId !in seenSet }
-                .map { AppleCatalog.toRelease(current, it, notified = !baseline) }
+                .map { AppleCatalog.toRelease(current, it, notified = false) }
+                .map { r -> if (!baseline && ReleaseRules.notifyOnFind(r.date, today)) r.copy(notified = true) else r }
                 .filter { r -> r.date?.let { !it.isBefore(cutoff) } ?: true }
                 .filter { known.add(key(it)) } // 通常版/クリーン版などの重複を除く
                 .toList()

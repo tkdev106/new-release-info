@@ -63,6 +63,7 @@ import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.unregisteredPlays
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
+import app.otoshirase.data.ReleaseRules
 import app.otoshirase.data.Store
 import app.otoshirase.data.Suggestion
 import app.otoshirase.widget.ReleaseWidget
@@ -73,6 +74,7 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     private val askNotify = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -296,7 +298,7 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("${kindLabel(ctx, r.kind)} · ${shortDate(ctx, r)}", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                if (r.notified) {
+                if (ReleaseRules.isNew(r.date, LocalDate.now())) {
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.badge_new), style = MaterialTheme.typography.labelSmall, color = c.onPrimary,
