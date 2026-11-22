@@ -130,14 +130,14 @@ class ReleaseWidget : GlanceAppWidget() {
             Row(GlanceModifier.fillMaxWidth()) {
                 releases.take(layout.count).forEachIndexed { i, r ->
                     if (i > 0) Spacer(GlanceModifier.width(GAP.dp))
-                    Item(context, r, art[r.id], layout.image, p)
+                    Item(context, r, art[r.id], layout.image, layout.showText, p)
                 }
             }
         }
     }
 
     @Composable
-    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int, p: Palette) {
+    private fun Item(context: Context, r: Release, bitmap: Bitmap?, imageDp: Int, showText: Boolean, p: Palette) {
         val open = releaseIntent(context, r)
         Column(
             GlanceModifier.width(imageDp.dp).let { m -> if (open != null) m.clickable(actionStartActivity(open)) else m },
@@ -153,6 +153,7 @@ class ReleaseWidget : GlanceAppWidget() {
                     )
                 }
             }
+            if (!showText) return@Column
             Spacer(GlanceModifier.height(6.dp))
             Label(context, r.title, 12f, bold = true, color = p.text, clearColor = p.clear?.text, p = p, widthDp = imageDp)
             // ジャケットと作品名だけでは誰の作品か分からない
@@ -184,20 +185,26 @@ class ReleaseWidget : GlanceAppWidget() {
         )
     }
 
-    private data class Layout(val count: Int, val image: Int)
+    private data class Layout(val count: Int, val image: Int, val showText: Boolean)
 
-    /** 高さから画像の大きさを、幅から並べる数を決める */
+    /**
+     * 高さから画像の大きさを、幅から並べる数を決める。
+     * 文字の 3 行まで入らない低いウィジェットでは文字を出さず、ジャケットを残りの高さに収める
+     * （無理に入れると、はみ出してジャケットの下が切れる）
+     */
     private fun layoutFor(size: DpSize): Layout {
         val w = size.width.value - PAD * 2
-        val h = size.height.value - PAD * 2 - HEADER - GAP - TEXT
-        val base = h.coerceIn(48f, 104f)
+        val room = size.height.value - PAD * 2 - HEADER - GAP
+        val showText = room - TEXT >= MIN_IMAGE
+        val base = (if (showText) room - TEXT else room).coerceIn(24f, 104f)
         val count = ((w + GAP) / (base + GAP)).toInt().coerceIn(1, MAX_ITEMS)
         val image = ((w - GAP * (count - 1)) / count).coerceAtMost(base)
-        return Layout(count, image.toInt())
+        return Layout(count, image.toInt(), showText)
     }
 
     private companion object {
         const val MAX_ITEMS = 6
+        const val MIN_IMAGE = 48f
         const val PAD = 14
         const val GAP = 10
         const val HEADER = 18
