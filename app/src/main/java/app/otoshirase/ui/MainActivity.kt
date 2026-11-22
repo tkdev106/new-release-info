@@ -411,6 +411,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
     var results by remember { mutableStateOf<List<AppleCatalog.Item>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
+    // 打ち終わる前（検索前）に「見つかりません」を出さないため、最後に検索した語を覚える
+    var searched by remember { mutableStateOf<String?>(null) }
     val added = remember { mutableStateListOf<Long>() }
     val focus = remember { FocusRequester() }
 
@@ -420,6 +422,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         loading = true; error = false
         try {
             results = AppleCatalog.searchArtists(query.trim())
+            searched = query
         } catch (e: CancellationException) {
             // 入力が変わって前の検索が打ち切られただけなので、エラーにしない
             throw e
@@ -481,6 +484,8 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().height(1.dp), color = c.primary, trackColor = Color.Transparent)
             }
             if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
+            // Most Played から名前が一致せずに来たときに、空白のままだと何が起きたか分からない
+            else if (!loading && query.isNotBlank() && results.isEmpty() && searched == query) Text(stringResource(R.string.search_no_results), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (query.isBlank() && refresher != null) {
                     // 取り直し中の一覧は保存前なので、興味なしにしたものもここで除く

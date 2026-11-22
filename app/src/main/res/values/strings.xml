@@ -52,6 +52,7 @@
     <string name="search_hint">Artist name</string>
     <string name="search_error">Couldn\'t search. Check your connection.</string>
     <string name="add_error">Couldn\'t add. Check your connection.</string>
+    <string name="search_no_results">No artists found</string>
 
     <string name="kind_single">Single</string>
     <string name="kind_ep" translatable="false">EP</string>
