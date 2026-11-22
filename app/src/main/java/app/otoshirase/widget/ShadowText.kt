@@ -25,9 +25,12 @@ object ShadowText {
         val width = (widthDp * density).toInt().coerceAtLeast(1)
         val line = TextUtils.ellipsize(text, paint, width - blur * 2, TextUtils.TruncateAt.END).toString()
         val fm = paint.fontMetrics
-        val height = ceil(fm.descent - fm.ascent + blur * 2).toInt().coerceAtLeast(1)
+        // 上下の余白を影の広がりぶん取ると、普通の文字より行が高くなって 3 行目がウィジェットからはみ出す。
+        // 影の端が少し欠けても読みやすさは変わらないので、上下は 1dp だけにする
+        val pad = 1f * density
+        val height = ceil(fm.descent - fm.ascent + pad * 2).toInt().coerceAtLeast(1)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        Canvas(bitmap).drawText(line, blur, blur - fm.ascent, paint)
+        Canvas(bitmap).drawText(line, blur, pad - fm.ascent, paint)
         return bitmap
     }
 }
