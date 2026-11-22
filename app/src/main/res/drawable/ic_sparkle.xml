@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI のおすすめを探すボタン用。拡張アイコンの依存を足さないために自前で描く -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10,2 C10.6,6.6 12.4,8.4 17,9 C12.4,9.6 10.6,11.4 10,16 C9.4,11.4 7.6,9.6 3,9 C7.6,8.4 9.4,6.6 10,2 Z M18,13 C18.3,15.3 19.2,16.2 21.5,16.5 C19.2,16.8 18.3,17.7 18,20 C17.7,17.7 16.8,16.8 14.5,16.5 C16.8,16.2 17.7,15.3 18,13 Z" />
+</vector>

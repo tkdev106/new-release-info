@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
 import app.otoshirase.R
@@ -449,19 +450,34 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                     item(key = "suggestions_header") {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.weight(1f)) { SectionLabel(stringResource(R.string.suggestions)) }
-                            // 取得は押したときだけ。取得中は押せないようにする
-                            IconButton(
+                            // 取得は押したときだけ。取得中は押せないようにする。
+                            // 候補がないときは ↻ だと何のボタンか分からないので、下に文字付きのボタンを出す
+                            if (shown.isNotEmpty()) IconButton(
                                 onClick = { App.scope.launch { refresher.refresh() } },
-                                enabled = !suggesting && registered.isNotEmpty(),
+                                enabled = !suggesting,
                             ) {
                                 Icon(Icons.Default.Refresh, stringResource(R.string.suggestions_refresh), Modifier.size(20.dp))
                             }
                         }
                     }
-                    if (!suggesting && suggestFailed && shown.isEmpty()) item {
-                        Text(stringResource(R.string.suggestions_error), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-                    } else if (!suggesting && shown.isEmpty()) item {
-                        Text(stringResource(R.string.suggestions_hint), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                    if (shown.isEmpty()) item(key = "suggestions_empty") {
+                        val note = when {
+                            registered.isEmpty() -> R.string.suggestions_need_artists
+                            !suggesting && suggestFailed -> R.string.suggestions_error
+                            else -> R.string.suggestions_hint
+                        }
+                        Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                            Text(stringResource(note), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+                            Spacer(Modifier.height(10.dp))
+                            FilledTonalButton(
+                                onClick = { App.scope.launch { refresher.refresh() } },
+                                enabled = !suggesting && registered.isNotEmpty(),
+                            ) {
+                                Icon(painterResource(R.drawable.ic_sparkle), null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.suggestions_find))
+                            }
+                        }
                     }
                     items(shown, key = { "s" + it.artistId }) { sg ->
                         PersonRow(sg.name, sg.genre, image = artistImageById(sg.artistId)) {
