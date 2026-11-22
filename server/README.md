@@ -63,6 +63,18 @@ Content-Type: application/json
    ```
    書いていないビルド（CI の APK など）では、おすすめ自体が出ない。トークンは APK の中に入るので、APK は人に配らない
 
+## 自動デプロイ（GitHub Actions）
+
+`main` に `server/` の変更が入ると、`.github/workflows/deploy-worker.yml` がテストを走らせてから `wrangler deploy` する。Actions の画面から手動でも流せる（Run workflow）。`GEMINI_API_KEY`・`APP_TOKEN` は Worker 側の secret のままで、デプロイでは変わらない。
+
+使う前に一度だけ、リポジトリの secrets を登録する（本人の作業）。
+
+1. **API トークンを作る。** Cloudflare のダッシュボード → 右上のアイコン → My Profile → API Tokens → Create Token → テンプレート「Edit Cloudflare Workers」→ Account Resources は自分のアカウント、Zone Resources は「All zones」のままでよい → Create Token。表示された値を控える（一度しか出ない）
+2. **アカウント ID を控える。** ダッシュボードの Workers & Pages の画面右側、または `npx wrangler whoami` に出る
+3. **GitHub に登録する。** リポジトリの Settings → Secrets and variables → Actions → New repository secret で次の 2 つを足す
+   - `CLOUDFLARE_API_TOKEN`: 1 の値
+   - `CLOUDFLARE_ACCOUNT_ID`: 2 の値
+
 手元で試すときは `server/.dev.vars` に `GEMINI_API_KEY=...` と `APP_TOKEN=...` を書いて `npm run dev`。
 
 ## 開発
