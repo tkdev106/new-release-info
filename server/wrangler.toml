@@ -8,6 +8,12 @@ LLM_PROVIDER = "gemini"
 # 新しく作った無料のキーでは 2.5 系が 404 になり、3.8-flash も通らなかった（2026-11 時点）
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 
+# 連打の防止。1 IP あたり 10 秒に 2 回まで（Cloudflare の窓は 10 秒か 60 秒しか選べない）
+[[ratelimits]]
+name = "BURST_LIMITER"
+namespace_id = "1002"
+simple = { limit = 2, period = 10 }
+
 # 1 IP あたり 1 分に 10 回まで。URL とトークンが漏れても無料枠を食い尽くされにくくする
 [[ratelimits]]
 name = "RATE_LIMITER"

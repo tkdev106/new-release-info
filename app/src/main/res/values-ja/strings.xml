@@ -73,4 +73,6 @@
     <string name="suggestions_loading">おすすめを探しています…</string>
     <string name="suggestions_error">いまはおすすめを表示できません</string>
     <string name="not_interested">興味なし</string>
+    <string name="suggestions_refresh">おすすめを更新</string>
+    <string name="suggestions_hint">↻ を押すと、登録したアーティストをもとにおすすめを探します</string>
 </resources>

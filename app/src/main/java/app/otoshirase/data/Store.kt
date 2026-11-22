@@ -61,10 +61,10 @@ object Store : StateStore {
         )
     }
 
-    suspend fun saveSuggestions(list: List<Suggestion>, key: String, at: Long) = update { s ->
+    suspend fun saveSuggestions(list: List<Suggestion>, at: Long) = update { s ->
         // 確認している間に登録・興味なしにしたものは出さない
         val excluded = s.artists.map { it.id }.toSet() + s.dismissedSuggestions
-        s.copy(suggestions = list.filterNot { it.artistId in excluded }, suggestionsKey = key, suggestionsAt = at)
+        s.copy(suggestions = list.filterNot { it.artistId in excluded }, suggestionsAt = at)
     }
 
     suspend fun saveCatalogLookups(found: Map<String, CatalogLookup>, now: Long) = update { s ->

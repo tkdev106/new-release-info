@@ -81,4 +81,6 @@
     <string name="suggestions_loading">Finding artists you might like…</string>
     <string name="suggestions_error">Couldn\'t load suggestions right now.</string>
     <string name="not_interested">Not interested</string>
+    <string name="suggestions_refresh">Refresh suggestions</string>
+    <string name="suggestions_hint">Tap ↻ to find artists based on the ones you follow.</string>
 </resources>

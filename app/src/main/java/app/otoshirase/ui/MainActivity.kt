@@ -141,7 +141,7 @@ private fun Root(start: Tab) {
     }
 
     searchFor?.let { initial ->
-        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, onDismiss = { searchFor = null })
+        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, dismissed = state.dismissedSuggestions.toSet(), onDismiss = { searchFor = null })
     }
 }
 
@@ -360,7 +360,7 @@ private fun listenerGranted(ctx: android.content.Context) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, onDismiss: () -> Unit) {
+private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, dismissed: Set<Long>, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
     var query by remember { mutableStateOf(initial) }
@@ -387,9 +387,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
     }
     LaunchedEffect(Unit) { if (initial.isBlank()) focus.requestFocus() }
 
-    // シートを閉じても確認は続けたいので App.scope で走らせる
     val refresher = App.suggestions
-    LaunchedEffect(Unit) { refresher?.let { r -> App.scope.launch { r.refreshIfStale() } } }
     val suggesting = refresher?.refreshing?.collectAsState()?.value == true
     val suggestFailed = refresher?.failed?.collectAsState()?.value == true
     // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
@@ -412,8 +410,6 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
         )
         App.scope.launch {
             Store.addArtist(artist)
-            // 好みが変わったので、おすすめを一新する
-            refresher?.refreshIfStale()
             runCatching { Checker.checkArtist(artist) }
             runCatching { ReleaseWidget().updateAll(ctx) }
         }
@@ -448,12 +444,24 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             if (error) Text(stringResource(R.string.search_error), style = MaterialTheme.typography.bodySmall, color = c.error, modifier = Modifier.padding(top = 8.dp))
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (query.isBlank() && refresher != null) {
-                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added }
-                    if (shown.isNotEmpty() || suggesting || suggestFailed) {
-                        item { SectionLabel(stringResource(R.string.suggestions)) }
+                    // 取り直し中の一覧は保存前なので、興味なしにしたものもここで除く
+                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added || it.artistId in dismissed }
+                    item(key = "suggestions_header") {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) { SectionLabel(stringResource(R.string.suggestions)) }
+                            // 取得は押したときだけ。取得中は押せないようにする
+                            IconButton(
+                                onClick = { App.scope.launch { refresher.refresh() } },
+                                enabled = !suggesting && registered.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.Refresh, stringResource(R.string.suggestions_refresh), Modifier.size(20.dp))
+                            }
+                        }
                     }
                     if (!suggesting && suggestFailed && shown.isEmpty()) item {
                         Text(stringResource(R.string.suggestions_error), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                    } else if (!suggesting && shown.isEmpty()) item {
+                        Text(stringResource(R.string.suggestions_hint), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                     }
                     items(shown, key = { "s" + it.artistId }) { sg ->
                         PersonRow(sg.name, sg.genre, image = artistImageById(sg.artistId)) {

@@ -2,8 +2,6 @@ package app.otoshirase.data
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
@@ -122,16 +120,5 @@ class SuggestionsTest {
         val source = FakeSource(emptyList())
         finder(source, FakeCatalog(emptyList())).find((1..40).map { artist(it.toLong(), "A$it") }, emptyList(), emptySet())
         assertEquals((1..30).map { "A$it" }, source.sent)
-    }
-
-    @Test
-    fun `登録が変わったらすぐ取り直し、変わらなければ7日ごとに取り直す`() {
-        val day = 24L * 60 * 60 * 1000
-        val s = AppState(artists = liked, suggestionsKey = SuggestionPolicy.key(liked), suggestionsAt = 0)
-        assertFalse(SuggestionPolicy.needsRefresh(s, 6 * day))
-        assertTrue(SuggestionPolicy.needsRefresh(s, 7 * day))
-        val changed = s.copy(artists = liked + artist(2, "TENDRE"))
-        assertTrue(SuggestionPolicy.needsRefresh(changed, 1))
-        assertFalse(SuggestionPolicy.needsRefresh(AppState(), 100 * day))
     }
 }

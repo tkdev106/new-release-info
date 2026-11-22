@@ -80,8 +80,6 @@ data class AppState(
     val appPlays: Map<String, Int> = emptyMap(),
     val lastCheck: Long = 0,
     val suggestions: List<Suggestion> = emptyList(),
-    /** 取ったときの登録アーティストの組み合わせ（SuggestionPolicy.key） */
-    val suggestionsKey: String? = null,
     val suggestionsAt: Long = 0,
     /** 「興味なし」にしたおすすめの artistId。次からも出さない */
     val dismissedSuggestions: List<Long> = emptyList(),
