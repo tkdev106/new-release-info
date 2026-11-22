@@ -44,6 +44,8 @@
     <string name="added">登録済み</string>
     <string name="search_hint">アーティスト名</string>
     <string name="search_error">検索できませんでした。通信状況を確認してください。</string>
+    <string name="add_error">登録できませんでした。通信状況を確認してください。</string>
+    <string name="search_no_results">見つかりませんでした</string>
 
     <string name="kind_single">シングル</string>
     <string name="kind_album">アルバム</string>
