@@ -8,6 +8,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -47,6 +48,7 @@ object AppleCatalog {
         val url = "https://itunes.apple.com/$path".toHttpUrl().newBuilder().apply {
             params.forEach { (k, v) -> addQueryParameter(k, v) }
             addQueryParameter("country", COUNTRY)
+            addQueryParameter("lang", lang(Locale.getDefault()))
         }.build()
         val req = Request.Builder().url(url).header("User-Agent", "Otoshirase/0.1 (Android)").build()
         http.newCall(req).execute().use { r ->
@@ -55,14 +57,28 @@ object AppleCatalog {
         }
     }
 
+    /**
+     * 日本ストアのままでも lang を変えるとジャンル名だけが英語になる（作品名・アーティスト名は変わらないことを確かめた）。
+     * 日本語以外の端末で「オルタナティブ」と出ないよう、端末の言語に合わせる
+     */
+    fun lang(locale: Locale): String = if (locale.language == "ja") "ja_jp" else "en_us"
+
     suspend fun searchArtists(term: String): List<Item> =
         get("search", mapOf("term" to term, "entity" to "musicArtist", "limit" to "15"))
             .results.filter { it.wrapperType == "artist" && it.artistId != null }
 
-    /** アーティストのアルバム/EP/シングル一覧（新しい順とは限らない） */
-    suspend fun albums(artistId: Long): List<Item> =
-        get("lookup", mapOf("id" to artistId.toString(), "entity" to "album", "limit" to "200"))
-            .results.filter { it.wrapperType == "collection" && it.collectionId != null }
+    /** アーティスト自身の情報（ジャンルなど）と、アルバム/EP/シングル一覧（新しい順とは限らない） */
+    data class Discography(val artist: Item?, val albums: List<Item>)
+
+    suspend fun discography(artistId: Long): Discography {
+        val results = get("lookup", mapOf("id" to artistId.toString(), "entity" to "album", "limit" to "200")).results
+        return Discography(
+            artist = results.firstOrNull { it.wrapperType == "artist" },
+            albums = results.filter { it.wrapperType == "collection" && it.collectionId != null },
+        )
+    }
+
+    suspend fun albums(artistId: Long): List<Item> = discography(artistId).albums
 
     /** "2026-09-18T07:00:00Z" → 端末のタイムゾーンでの日付 */
     private fun localDate(s: String): String = runCatching {

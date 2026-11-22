@@ -44,7 +44,8 @@ object Checker {
     /** @return 新着として通知すべきリリース */
     suspend fun checkArtist(a: Artist): List<Release> {
         refreshImage(a)
-        val items = AppleCatalog.albums(a.id)
+        val disco = AppleCatalog.discography(a.id)
+        val items = disco.albums
         val today = LocalDate.now()
         var fresh = emptyList<Release>()
         Store.update { s ->
@@ -67,9 +68,11 @@ object Checker {
             val localName = items.mapNotNull { it.artistName }
                 .filterNot { it.contains(" & ") || it.contains(", ") }
                 .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
-            val updatedArtist = if (localName != null && localName != current.name)
+            val renamed = if (localName != null && localName != current.name)
                 current.copy(name = localName, aliases = (current.aliases + current.name).distinct())
             else current
+            // 登録時と端末の言語が変わっていても、ジャンル名を今の言語に揃える
+            val updatedArtist = renamed.copy(genre = disco.artist?.primaryGenreName ?: renamed.genre)
 
             s.copy(
                 artists = s.artists.map { if (it.id == a.id) updatedArtist else it },
