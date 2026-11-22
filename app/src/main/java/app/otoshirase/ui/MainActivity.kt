@@ -61,6 +61,7 @@ import app.otoshirase.data.PlayArtistResolver
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
 import app.otoshirase.data.unregisteredPlays
+import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.Store
 import app.otoshirase.data.Suggestion
@@ -374,7 +375,9 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
     val added = remember { mutableStateMapOf<String, Long>() }
     val resolving = remember { mutableStateListOf<String>() }
     val unregistered = state.unregisteredPlays()
+    // 保存順に頼らず、よく聴く順（同じ回数なら最近聴いた順）に並べる
     val plays = state.plays.filter { it in unregistered || it.name in added }
+        .sortedWith(compareByDescending<PlayStat> { it.count }.thenByDescending { it.lastPlayed })
     var granted by remember { mutableStateOf(listenerGranted(ctx)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 

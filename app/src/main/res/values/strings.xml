@@ -25,7 +25,7 @@
         <item quantity="one">%d artist</item>
         <item quantity="other">%d artists</item>
     </plurals>
-    <string name="plays_subtitle">Artists you play but haven\'t added</string>
+    <string name="plays_subtitle">Most played artists you haven\'t added</string>
 
     <string name="releases_empty">No new releases yet</string>
     <string name="releases_empty_no_artists">Add artists to see\ntheir new releases here</string>

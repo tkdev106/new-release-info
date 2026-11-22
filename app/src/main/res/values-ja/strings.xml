@@ -20,7 +20,7 @@
     <plurals name="artist_count">
         <item quantity="other">%d組のアーティスト</item>
     </plurals>
-    <string name="plays_subtitle">よく聴くけれど未登録のアーティスト</string>
+    <string name="plays_subtitle">よく聴く未登録のアーティスト</string>
 
     <string name="releases_empty">新しいリリースはまだありません</string>
     <string name="releases_empty_no_artists">アーティストを登録すると\n新譜がここに表示されます</string>
