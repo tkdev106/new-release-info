@@ -13,10 +13,12 @@ import androidx.core.content.ContextCompat
 import app.otoshirase.R
 import app.otoshirase.data.Artwork
 import app.otoshirase.data.Release
+import app.otoshirase.data.ReleaseNotice
 import app.otoshirase.ui.MainActivity
-import app.otoshirase.ui.dateLabel
 import app.otoshirase.ui.kindLabel
+import app.otoshirase.ui.monthDay
 import app.otoshirase.ui.releaseIntent
+import java.time.LocalDate
 
 object Notifier {
     private const val CHANNEL = "releases"
@@ -41,8 +43,10 @@ object Notifier {
         releases.take(8).forEach { r ->
             val n = NotificationCompat.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_note)
-                .setContentTitle(ctx.getString(if (r.upcoming) R.string.notif_title_upcoming else R.string.notif_title_released, r.artistName))
-                .setContentText(ctx.getString(R.string.notif_text, r.title, kindLabel(ctx, r.kind), dateLabel(ctx, r)))
+                // 長いタイトルは途中で切れるので、タイトルは誰の作品かだけにして、何がいつ出るかは本文に書く
+                .setContentTitle(r.artistName)
+                .setContentText(text(ctx, r))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text(ctx, r)))
                 .setLargeIcon(r.artwork?.let { Artwork.load(it) })
                 .setContentIntent(openIntent(ctx, r))
                 .setAutoCancel(true)
@@ -61,6 +65,17 @@ object Notifier {
                 .setContentIntent(appIntent(ctx))
                 .build()
             nm.notify(0, summary)
+        }
+    }
+
+    private fun text(ctx: Context, r: Release): String {
+        val kind = kindLabel(ctx, r.kind)
+        val date = r.date?.let { monthDay(it) }.orEmpty()
+        return when (ReleaseNotice.of(r.date, LocalDate.now())) {
+            ReleaseNotice.Upcoming -> ctx.getString(R.string.notif_text_upcoming, kind, r.title, date)
+            ReleaseNotice.Today -> ctx.getString(R.string.notif_text_today, kind, r.title)
+            ReleaseNotice.JustReleased -> ctx.getString(R.string.notif_text_released, kind, r.title)
+            ReleaseNotice.Found -> ctx.getString(R.string.notif_text_found, kind, r.title, date)
         }
     }
 

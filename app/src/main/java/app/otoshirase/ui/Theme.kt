@@ -14,6 +14,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -41,7 +44,23 @@ fun AppTheme(content: @Composable () -> Unit) {
         dark -> darkColorScheme(primary = Color(0xFFA8C7FA), onPrimary = Color(0xFF062E6F), secondaryContainer = Color(0xFF2B3A55))
         else -> lightColorScheme(primary = Color(0xFF0B57D0), onPrimary = Color.White, secondaryContainer = Color(0xFFD3E3FD))
     }
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, typography = typography, content = content)
+}
+
+/**
+ * 日本語は既定だと語の途中（「削除します／か」）でも折り返すので、文節で折り返す（Android 13 以降で効く）。
+ * 英語など文節の区切りが無い言語では普段どおりの折り返しになる
+ */
+private val phrase = LineBreak(LineBreak.Strategy.Balanced, LineBreak.Strictness.Normal, LineBreak.WordBreak.Phrase)
+private fun TextStyle.phrase() = copy(lineBreak = phrase)
+private val typography = Typography().run {
+    copy(
+        displayLarge = displayLarge.phrase(), displayMedium = displayMedium.phrase(), displaySmall = displaySmall.phrase(),
+        headlineLarge = headlineLarge.phrase(), headlineMedium = headlineMedium.phrase(), headlineSmall = headlineSmall.phrase(),
+        titleLarge = titleLarge.phrase(), titleMedium = titleMedium.phrase(), titleSmall = titleSmall.phrase(),
+        bodyLarge = bodyLarge.phrase(), bodyMedium = bodyMedium.phrase(), bodySmall = bodySmall.phrase(),
+        labelLarge = labelLarge.phrase(), labelMedium = labelMedium.phrase(), labelSmall = labelSmall.phrase(),
+    )
 }
 
 @Composable

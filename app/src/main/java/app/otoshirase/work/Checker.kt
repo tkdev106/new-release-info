@@ -11,6 +11,7 @@ import app.otoshirase.notify.Notifier
 import app.otoshirase.widget.ReleaseWidget
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.delay
+import java.io.IOException
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -23,21 +24,26 @@ object Checker {
 
     suspend fun checkAll(ctx: Context): List<Release> {
         val fresh = mutableListOf<Release>()
-        Store.state.value.artists.forEachIndexed { i, a ->
+        val artists = Store.state.value.artists
+        var failures = 0
+        artists.forEachIndexed { i, a ->
             if (i > 0) delay(GAP_MS)
-            runCatching { fresh += checkArtist(a) }
+            runCatching { fresh += checkArtist(a) }.onFailure { failures++ }
         }
+        // 1 組も確かめられなかったのに「確認しました」と見せないため、確認日時を進めずに失敗として返す
+        val allFailed = artists.isNotEmpty() && failures == artists.size
         var released = emptyList<Release>()
         Store.update { s ->
             released = ReleaseDay.due(s.releases, LocalDate.now(), ZoneId.systemDefault())
             val ids = released.map { it.id }.toSet()
             s.copy(
-                lastCheck = System.currentTimeMillis(),
+                lastCheck = if (allFailed) s.lastCheck else System.currentTimeMillis(),
                 releases = s.releases.map { if (it.id in ids) it.copy(releaseDayNotified = true) else it },
             )
         }
         Notifier.notifyReleases(ctx, fresh + released)
         runCatching { ReleaseWidget().updateAll(ctx) }
+        if (allFailed) throw IOException("どのアーティストの新譜も取得できませんでした")
         return fresh
     }
 

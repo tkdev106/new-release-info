@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 「今すぐ確認」を押したときに、通信できるかを先に確かめるため -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 新譜をよく使う音楽アプリで開けるか確かめるため（Android 11 以降はこれが無いと見えない） -->

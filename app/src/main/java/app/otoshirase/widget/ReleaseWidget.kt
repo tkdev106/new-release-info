@@ -83,7 +83,11 @@ class ReleaseWidget : GlanceAppWidget() {
     private class Palette(
         val background: ColorProvider, val title: ColorProvider, val text: ColorProvider,
         val sub: ColorProvider, val accent: ColorProvider, val tile: ColorProvider,
+        /** 透過のときの文字色と影の色。壁紙の明るい所・暗い所でも読めるよう、文字に影を付けて画像で描く */
+        val clear: ClearText? = null,
     )
+
+    private class ClearText(val text: Int, val sub: Int, val shadow: Int)
 
     @Composable
     private fun palette(style: WidgetStyle): Palette {
@@ -93,10 +97,12 @@ class ReleaseWidget : GlanceAppWidget() {
             WidgetStyle.ClearWhite -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color.White), ColorProvider(Color.White),
                 ColorProvider(Color.White.copy(alpha = 0.8f)), ColorProvider(Color.White), ColorProvider(Color.White.copy(alpha = 0.18f)),
+                ClearText(0xFFFFFFFF.toInt(), 0xE6FFFFFF.toInt(), 0x99000000.toInt()),
             )
             WidgetStyle.ClearBlack -> Palette(
                 ColorProvider(Color.Transparent), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0xFF1B1B1F)),
                 ColorProvider(Color(0xCC1B1B1F)), ColorProvider(Color(0xFF1B1B1F)), ColorProvider(Color(0x2E1B1B1F)),
+                ClearText(0xFF1B1B1F.toInt(), 0xE61B1B1F.toInt(), 0x99FFFFFF.toInt()),
             )
         }
     }
@@ -106,10 +112,10 @@ class ReleaseWidget : GlanceAppWidget() {
         val size = LocalSize.current
         val openApp = actionStartActivity<MainActivity>()
         Column(GlanceModifier.fillMaxSize().background(p.background).cornerRadius(24.dp).padding(PAD.dp)) {
-            Text(
-                context.getString(R.string.widget_label),
-                style = TextStyle(color = p.title, fontWeight = FontWeight.Medium, fontSize = 14.sp),
-                modifier = GlanceModifier.clickable(openApp),
+            Label(
+                context, context.getString(R.string.widget_label), 14f, bold = true,
+                color = p.title, clearColor = p.clear?.text, p = p,
+                widthDp = (size.width.value - PAD * 2).toInt(), modifier = GlanceModifier.clickable(openApp),
             )
             Spacer(GlanceModifier.height(GAP.dp))
             if (releases.isEmpty()) {
@@ -148,13 +154,37 @@ class ReleaseWidget : GlanceAppWidget() {
                 }
             }
             Spacer(GlanceModifier.height(6.dp))
-            Text(r.title, maxLines = 1, style = TextStyle(color = p.text, fontWeight = FontWeight.Medium, fontSize = 12.sp))
-            Text(
+            Label(context, r.title, 12f, bold = true, color = p.text, clearColor = p.clear?.text, p = p, widthDp = imageDp)
+            // ジャケットと作品名だけでは誰の作品か分からない
+            Label(context, r.artistName, 11f, bold = false, color = p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp)
+            Label(
+                context,
                 if (r.upcoming) context.getString(R.string.widget_upcoming, shortDate(context, r)) else shortDate(context, r),
-                maxLines = 1,
-                style = TextStyle(color = if (r.upcoming) p.accent else p.sub, fontSize = 11.sp),
+                11f, bold = false, color = if (r.upcoming) p.accent else p.sub, clearColor = p.clear?.sub, p = p, widthDp = imageDp,
             )
         }
+    }
+
+    /** 1 行の文字。透過のときだけ影付きの画像で描く（Glance の文字には影を付けられないため） */
+    @Composable
+    private fun Label(
+        context: Context, text: String, sp: Float, bold: Boolean, color: ColorProvider, clearColor: Int?, p: Palette,
+        widthDp: Int, modifier: GlanceModifier = GlanceModifier,
+    ) {
+        val clear = p.clear
+        if (clear == null || clearColor == null) {
+            Text(
+                text, maxLines = 1, modifier = modifier,
+                style = TextStyle(color = color, fontWeight = if (bold) FontWeight.Medium else FontWeight.Normal, fontSize = sp.sp),
+            )
+            return
+        }
+        val bitmap = ShadowText.render(context, text, sp, clearColor, clear.shadow, bold, widthDp)
+        val density = context.resources.displayMetrics.density
+        Image(
+            ImageProvider(bitmap), contentDescription = text, contentScale = ContentScale.Fit,
+            modifier = modifier.size(widthDp.dp, (bitmap.height / density).dp),
+        )
     }
 
     private data class Layout(val count: Int, val image: Int)
@@ -174,7 +204,8 @@ class ReleaseWidget : GlanceAppWidget() {
         const val PAD = 14
         const val GAP = 10
         const val HEADER = 18
-        const val TEXT = 40
+        // 作品名・アーティスト名・日付の 3 行
+        const val TEXT = 56
     }
 }
 

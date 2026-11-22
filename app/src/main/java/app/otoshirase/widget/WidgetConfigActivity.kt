@@ -11,7 +11,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -29,7 +31,6 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import app.otoshirase.R
 import app.otoshirase.ui.AppTheme
-import app.otoshirase.ui.PillButton
 import kotlinx.coroutines.launch
 
 /** ウィジェットの設定（背景の種類）。ホーム画面でウィジェットを長押し →「設定」から開く */
@@ -50,7 +51,7 @@ class WidgetConfigActivity : ComponentActivity() {
             val current = WidgetStyle.of(getAppWidgetState(this@WidgetConfigActivity, PreferencesGlanceStateDefinition, glanceId)[WidgetStyle.KEY])
             setContent {
                 AppTheme {
-                    ConfigScreen(current) { chosen ->
+                    ConfigScreen(current, onCancel = { finish() }) { chosen ->
                         lifecycleScope.launch {
                             updateAppWidgetState(this@WidgetConfigActivity, glanceId) { it[WidgetStyle.KEY] = chosen.name }
                             ReleaseWidget().update(this@WidgetConfigActivity, glanceId)
@@ -65,7 +66,7 @@ class WidgetConfigActivity : ComponentActivity() {
 }
 
 @Composable
-private fun ConfigScreen(initial: WidgetStyle, onDone: (WidgetStyle) -> Unit) {
+private fun ConfigScreen(initial: WidgetStyle, onCancel: () -> Unit, onDone: (WidgetStyle) -> Unit) {
     var selected by remember { mutableStateOf(initial) }
     val c = MaterialTheme.colorScheme
     Column(
@@ -84,9 +85,11 @@ private fun ConfigScreen(initial: WidgetStyle, onDone: (WidgetStyle) -> Unit) {
                 StylePreview(s)
             }
         }
-        Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            PillButton(stringResource(R.string.done), filled = true) { onDone(selected) }
+        // 選んだらすぐ押せるよう、ボタンは選択肢のすぐ下に置く。戻る操作を知らなくても閉じられるようキャンセルも出す
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.cancel)) }
+            Button(onClick = { onDone(selected) }, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.done)) }
         }
     }
 }
