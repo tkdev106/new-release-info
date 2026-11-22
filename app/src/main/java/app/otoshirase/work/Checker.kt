@@ -56,6 +56,7 @@ object Checker {
             val cutoff = today.minusDays(if (baseline) BASELINE_DAYS else NEW_DAYS)
             val known = s.releases.filter { it.artistId == a.id }.map { key(it) }.toMutableSet()
 
+            val currentNames = items.mapNotNull { i -> i.artistName?.let { i.collectionId!! to it } }.toMap()
             val added = items.asSequence()
                 .filter { it.collectionId !in seenSet }
                 .map { AppleCatalog.toRelease(current, it, notified = !baseline) }
@@ -77,8 +78,8 @@ object Checker {
             s.copy(
                 artists = s.artists.map { if (it.id == a.id) updatedArtist else it },
                 seen = s.seen + (a.id to (seenSet + items.mapNotNull { it.collectionId }).toList()),
-                // 端末の言語を変えてストアが変わったときも、単独名義の作品のアーティスト名を揃える
-                releases = (s.releases.map { if (it.artistId == a.id && it.artistName == current.name) it.copy(artistName = updatedArtist.name) else it } + added)
+                // 端末の言語を変えてストアが変わったときも、保存済みの作品のアーティスト名（連名を含む）を今のストアの表記に揃える
+                releases = (s.releases.map { r -> if (r.artistId == a.id) r.copy(artistName = currentNames[r.id] ?: r.artistName) else r } + added)
                     .sortedWith(compareByDescending<Release> { it.releaseDate ?: "" }.thenByDescending { it.foundAt })
                     .take(400),
             )
