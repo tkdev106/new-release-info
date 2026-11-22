@@ -40,9 +40,14 @@ class CheckerTest {
         }
         val second = Checker.checkArtist(Store.state.value.artists.first())
         println("newest=${newest.collectionName} ${newest.releaseDate} -> detected=${second.map { it.title }}")
-        val isRecent = newest.releaseDate!!.take(10) >= java.time.LocalDate.now().minusDays(60).toString()
-        if (isRecent) assertEquals(listOf(newest.collectionId), second.map { it.id })
-        else assertTrue("古い作品は通知しない", second.isEmpty())
+        val date = newest.releaseDate!!.take(10)
+        val today = java.time.LocalDate.now()
+        // 通知するのは発売前と発売日に見つけたものだけ。発売済みの作品は、一覧に入っても通知しない
+        if (date >= today.toString()) assertEquals(listOf(newest.collectionId), second.map { it.id })
+        else assertTrue("発売済みの作品はあとから見つけても通知しない", second.isEmpty())
+        if (date >= today.minusDays(60).toString()) {
+            assertTrue("60 日以内の作品は一覧に入る", Store.state.value.releases.any { it.id == newest.collectionId })
+        }
 
         // 3回目: 変化なし
         assertEquals(0, Checker.checkArtist(Store.state.value.artists.first()).size)

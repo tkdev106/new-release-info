@@ -505,13 +505,13 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
 
     val snackbar = remember { SnackbarHostState() }
     val sheetScope = rememberCoroutineScope()
-    // 押した瞬間に消えるので、押し間違えたときにその場で戻せるようにする
+    // 押した瞬間に消えるので、押し間違えたときにその場で戻せるようにする。短いと押す前に消えてしまう
     fun dismiss(sg: Suggestion) {
         val index = suggestions.indexOfFirst { it.artistId == sg.artistId }
         App.scope.launch { Store.dismissSuggestion(sg.artistId) }
         sheetScope.launch {
             snackbar.currentSnackbarData?.dismiss()
-            val r = snackbar.showSnackbar(ctx.getString(R.string.suggestion_dismissed), ctx.getString(R.string.undo), duration = SnackbarDuration.Short)
+            val r = snackbar.showSnackbar(ctx.getString(R.string.suggestion_dismissed), ctx.getString(R.string.undo), duration = SnackbarDuration.Long)
             if (r == SnackbarResult.ActionPerformed) App.scope.launch { Store.restoreSuggestion(sg, index) }
         }
     }
