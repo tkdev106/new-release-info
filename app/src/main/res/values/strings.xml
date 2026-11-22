@@ -82,5 +82,7 @@
     <string name="suggestions_error">Couldn\'t load suggestions right now.</string>
     <string name="not_interested">Not interested</string>
     <string name="suggestions_refresh">Refresh suggestions</string>
-    <string name="suggestions_hint">Tap ↻ to find artists based on the ones you follow.</string>
+    <string name="suggestions_hint">AI suggests similar artists based on the ones you follow.</string>
+    <string name="suggestions_find">Find suggestions</string>
+    <string name="suggestions_need_artists">Follow an artist to get suggestions.</string>
 </resources>
