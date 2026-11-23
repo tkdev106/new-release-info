@@ -13,23 +13,51 @@ val localProps = Properties().apply {
 }
 fun localProp(key: String): String = (localProps.getProperty(key) ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
 
+// Play に上げる版の署名鍵（アップロード鍵）。鍵とパスワードは本人だけが持つので、Git に入らない
+// keystore.properties か環境変数（CI 用）から読む。どちらも無ければ署名なしで組み上げる
+val keystoreProps = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun signingValue(key: String, env: String): String? =
+    keystoreProps.getProperty(key)?.takeIf { it.isNotBlank() } ?: System.getenv(env)?.takeIf { it.isNotBlank() }
+val releaseStoreFile = signingValue("storeFile", "RELEASE_STORE_FILE")
+
+// versionCode は versionName から決める（1.2.3 → 10203）。Play は上がっていない版を受け付けないので、
+// 名前を上げ忘れて番号だけ同じ、ということが起きないよう 1 か所にまとめる
+val appVersionName = "0.1.0"
+val appVersionCode = appVersionName.split(".").map(String::toInt).let { (major, minor, patch) ->
+    require(minor < 100 && patch < 100) { "versionName の各桁は 99 まで" }
+    major * 10_000 + minor * 100 + patch
+}
+
 android {
     namespace = "app.otoshirase"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.otoshirase"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        targetSdk = 36
+        versionCode = appVersionCode
+        versionName = appVersionName
         buildConfigField("String", "SUGGEST_URL", "\"${localProp("suggest.url")}\"")
         buildConfigField("String", "SUGGEST_TOKEN", "\"${localProp("suggest.token")}\"")
+    }
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile)
+                storePassword = signingValue("storePassword", "RELEASE_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "RELEASE_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "RELEASE_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            // 鍵が無いとき（CI など）は署名しない。デバッグ鍵で署名した版を Play に上げてしまわないため
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     compileOptions {

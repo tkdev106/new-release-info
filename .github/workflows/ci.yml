@@ -23,6 +23,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: verify
         run: ./gradlew verify --stacktrace
+      # 鍵は CI に置かないので署名なし。Play に出す形（AAB）で組み上がることだけを確かめる
+      - name: リリース版の組み上げ
+        run: ./gradlew bundleRelease --stacktrace
       - name: lint の結果
         if: failure()
         uses: actions/upload-artifact@v4

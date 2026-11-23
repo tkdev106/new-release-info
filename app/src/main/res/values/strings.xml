@@ -92,4 +92,8 @@
     <string name="suggestions_hint">AI suggests similar artists based on the ones you\'ve added.</string>
     <string name="suggestions_find">Find suggestions</string>
     <string name="suggestions_need_artists">Add an artist to get suggestions.</string>
+    <string name="listener_disclosure_title">About notification access</string>
+    <string name="listener_disclosure_body">New Releases uses notification access only to see which song is playing in your music apps (the artist name and the app). It counts plays to show your most-played artists.\n\nIt does not read the content of your notifications. Play counts stay on this device and are never sent anywhere.</string>
+    <string name="listener_disclosure_agree">Agree and continue</string>
+    <string name="not_now">Not now</string>
 </resources>
