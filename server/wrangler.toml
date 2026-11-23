@@ -7,6 +7,11 @@ compatibility_date = "2026-11-01"
 LLM_PROVIDER = "gemini"
 # 新しく作った無料のキーでは 2.5 系が 404 になり、3.8-flash も通らなかった（2026-11 時点）
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+# 全利用者を合わせた 1 日（UTC）の LLM 呼び出しの上限。キャッシュから返したものは数えない。
+# Gemini の無料枠の 1 日の回数より少し下に置き、枠が尽きて全員が使えなくなるのを防ぐ
+DAILY_LLM_LIMIT = "500"
+# Play Integrity で確かめるアプリ（PLAY_INTEGRITY_SA_KEY を secret に入れたときだけ使う）
+PLAY_PACKAGE_NAME = "app.otoshirase"
 
 # 連打の防止。1 IP あたり 10 秒に 2 回まで（Cloudflare の窓は 10 秒か 60 秒しか選べない）
 [[ratelimits]]
@@ -19,6 +24,15 @@ simple = { limit = 2, period = 10 }
 name = "RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 10, period = 60 }
+
+# 1 日の回数を全体で 1 つ数えるための Durable Object（src/guard/quota.js）。無料プランでも使える SQLite 版
+[[durable_objects.bindings]]
+name = "DAILY_QUOTA"
+class_name = "DailyQuotaCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DailyQuotaCounter"]
 
 [observability]
 enabled = true
