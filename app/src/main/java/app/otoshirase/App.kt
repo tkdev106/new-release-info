@@ -2,9 +2,11 @@ package app.otoshirase
 
 import android.app.Application
 import app.otoshirase.data.AppleArtistCatalog
+import app.otoshirase.data.PlayIntegrityAuth
 import app.otoshirase.data.Store
 import app.otoshirase.data.SuggestionFinder
 import app.otoshirase.data.SuggestionRefresher
+import app.otoshirase.data.TokenAuth
 import app.otoshirase.data.WorkerSuggestionSource
 import app.otoshirase.notify.Notifier
 import app.otoshirase.work.CheckWorker
@@ -18,10 +20,16 @@ class App : Application() {
         Store.init(this)
         Notifier.createChannels(this)
         CheckWorker.schedule(this)
-        // 中継の URL とトークンが local.properties に無いビルド（CI など）では、おすすめ自体を出さない
-        if (BuildConfig.SUGGEST_URL.isNotBlank() && BuildConfig.SUGGEST_TOKEN.isNotBlank()) {
+        // 開発版・APK で配る版はトークン、Play 版（トークンを入れない）は Play Integrity で中継に名乗る。
+        // どちらも無いビルド（CI など）では、おすすめ自体を出さない
+        val auth = when {
+            BuildConfig.SUGGEST_TOKEN.isNotBlank() -> TokenAuth(BuildConfig.SUGGEST_TOKEN)
+            BuildConfig.PLAY_CLOUD_PROJECT_NUMBER > 0 -> PlayIntegrityAuth(this, BuildConfig.PLAY_CLOUD_PROJECT_NUMBER)
+            else -> null
+        }
+        if (BuildConfig.SUGGEST_URL.isNotBlank() && auth != null) {
             suggestions = SuggestionRefresher(
-                SuggestionFinder(WorkerSuggestionSource(BuildConfig.SUGGEST_URL, BuildConfig.SUGGEST_TOKEN), AppleArtistCatalog),
+                SuggestionFinder(WorkerSuggestionSource(BuildConfig.SUGGEST_URL, auth), AppleArtistCatalog),
             )
         }
     }
