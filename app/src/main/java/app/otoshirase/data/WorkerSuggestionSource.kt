@@ -14,17 +14,18 @@ import java.util.concurrent.TimeUnit
 /** SuggestionSource を中継（server/ の Cloudflare Worker）で実装したもの。API キーは中継側にだけある */
 class WorkerSuggestionSource(
     private val endpoint: String,
-    private val token: String,
+    private val auth: RequestAuth,
     private val http: OkHttpClient = defaultClient,
 ) : SuggestionSource {
     @Serializable private data class Body(val artists: List<String>)
     @Serializable private data class Resp(val suggestions: List<String> = emptyList())
 
     override suspend fun suggest(likedArtists: List<String>): List<String> = withContext(Dispatchers.IO) {
+        val body = json.encodeToString(Body.serializer(), Body(likedArtists))
         val req = Request.Builder()
             .url(endpoint.trimEnd('/') + "/v1/suggestions")
-            .header("Authorization", "Bearer $token")
-            .post(json.encodeToString(Body.serializer(), Body(likedArtists)).toRequestBody("application/json".toMediaType()))
+            .apply { auth.headers(body).forEach { (k, v) -> header(k, v) } }
+            .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { r ->
             if (!r.isSuccessful) throw IOException("HTTP ${r.code}")

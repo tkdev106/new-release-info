@@ -36,3 +36,15 @@ Play には「Play アプリ署名」を使う。利用者の端末に届くア�
 ```
 
 `app/build/outputs/bundle/release/app-release.aab` を Play Console に上げる。
+
+## おすすめの中継への名乗り方
+
+| 版 | 組み上げ | 名乗り方 |
+| --- | --- | --- |
+| Play 版 | `bundleRelease` | Play Integrity（`local.properties` の `play.cloudProjectNumber`）。トークンは入れない |
+| APK で配る版・開発版 | `assembleDebug` | `local.properties` の `suggest.token` |
+
+Play Integrity の準備（Cloud プロジェクトのリンク・サービスアカウントの鍵）は `server/README.md` の「Play Integrity のセットアップ」。
+`play.cloudProjectNumber` が無いまま `bundleRelease` すると、Play 版ではおすすめが出ない。
+
+APK で配った版（デバッグ鍵で署名）と Play 版は署名が違うので、上書きでは入れ替えられない。Play 版に移る人は、APK 版をアンインストールしてから入れる（登録したアーティストは消える）。

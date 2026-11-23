@@ -42,6 +42,8 @@ android {
         versionName = appVersionName
         buildConfigField("String", "SUGGEST_URL", "\"${localProp("suggest.url")}\"")
         buildConfigField("String", "SUGGEST_TOKEN", "\"${localProp("suggest.token")}\"")
+        // Play Integrity を使う Google Cloud プロジェクトの番号（秘密ではない）。Play 版で使う
+        buildConfigField("long", "PLAY_CLOUD_PROJECT_NUMBER", "${localProp("play.cloudProjectNumber").toLongOrNull() ?: 0}L")
     }
     signingConfigs {
         if (releaseStoreFile != null) {
@@ -58,6 +60,9 @@ android {
             isMinifyEnabled = false
             // 鍵が無いとき（CI など）は署名しない。デバッグ鍵で署名した版を Play に上げてしまわないため
             signingConfig = signingConfigs.findByName("release")
+            // Play 版にはトークンを入れない（APK から抜き出せるため）。代わりに Play Integrity で名乗る。
+            // APK で配る版は debug で組み上げる
+            buildConfigField("String", "SUGGEST_TOKEN", "\"\"")
         }
     }
     compileOptions {
@@ -83,6 +88,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    // Play から入れた本物のアプリだと中継に示すため（2026-11-23 本人了承）
+    implementation("com.google.android.play:integrity:1.6.0")
+    constraints {
+        // Play Integrity が連れてくる fragment は古く（1.1）、registerForActivityResult が正しく動かない
+        implementation("androidx.fragment:fragment:1.8.9")
+    }
 
     testImplementation("junit:junit:4.13.2")
 }
