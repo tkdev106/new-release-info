@@ -384,10 +384,19 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 
     if (!granted) {
+        // 設定画面を開く前に、何を読んで何を読まないかを見せて同意をもらう（Google Play の「目立つ開示」）
+        var disclose by rememberSaveable { mutableStateOf(false) }
         Empty(
             stringResource(R.string.plays_intro_body),
-            stringResource(R.string.allow) to { ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+            stringResource(R.string.allow) to { disclose = true },
             title = stringResource(R.string.plays_intro_title),
+        )
+        if (disclose) ListenerDisclosure(
+            onAgree = {
+                disclose = false
+                ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            },
+            onDecline = { disclose = false },
         )
         return
     }
@@ -451,6 +460,17 @@ private fun artistImageById(id: Long): String? =
 @Composable
 private fun artistImageByName(name: String): String? =
     produceState<String?>(null, name) { value = ArtistImages.forName(name) }.value
+
+@Composable
+private fun ListenerDisclosure(onAgree: () -> Unit, onDecline: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDecline,
+        title = { Text(stringResource(R.string.listener_disclosure_title)) },
+        text = { Text(stringResource(R.string.listener_disclosure_body)) },
+        confirmButton = { TextButton(onClick = onAgree) { Text(stringResource(R.string.listener_disclosure_agree)) } },
+        dismissButton = { TextButton(onClick = onDecline) { Text(stringResource(R.string.not_now)) } },
+    )
+}
 
 private fun listenerGranted(ctx: android.content.Context) =
     NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
