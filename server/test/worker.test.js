@@ -149,3 +149,76 @@ test("決まった道以外は受け付けない", async () => {
   const r = await worker.fetch(new Request("https://w.example/other", { method: "POST" }), env, ctx);
   assert.equal(r.status, 404);
 });
+
+const callFrom = (country, extraEnv = {}, headers = { Authorization: "Bearer secret" }, body = { artists: ["羊文学"] }) => {
+  const req = new Request("https://w.example/v1/suggestions", { method: "POST", headers, body: JSON.stringify(body) });
+  if (country) Object.defineProperty(req, "cf", { value: { country } });
+  return worker.fetch(req, { ...env, ...extraEnv }, ctx);
+};
+
+test("EEA・英国・スイスからは Gemini を呼ばずに 451 で断る", async () => {
+  for (const c of ["DE", "GB", "CH"]) assert.equal((await callFrom(c)).status, 451);
+  assert.equal(geminiCalls, 0);
+  geminiReplies.push(ok(["never young beach"]));
+  assert.equal((await callFrom("JP")).status, 200);
+});
+
+function fakeQuota(limit) {
+  let used = 0;
+  return {
+    idFromName: (n) => n,
+    get: () => ({
+      fetch: async (_u, init) => {
+        const { limit: l } = JSON.parse(init.body);
+        assert.equal(l, limit);
+        if (used >= l) return Response.json({ ok: false });
+        used++;
+        return Response.json({ ok: true });
+      },
+    }),
+  };
+}
+
+test("1 日の上限を超えたら Gemini を呼ばずに 503 を返し、キャッシュにあるものは返す", async () => {
+  const quota = { DAILY_QUOTA: fakeQuota(1), DAILY_LLM_LIMIT: "1" };
+  geminiReplies.push(ok(["never young beach"]));
+  assert.equal((await callFrom(null, quota)).status, 200);
+  const over = await callFrom(null, quota, undefined, { artists: ["YOASOBI"] });
+  assert.equal(over.status, 503);
+  assert.ok(Number(over.headers.get("Retry-After")) > 0);
+  assert.equal(geminiCalls, 1);
+  assert.equal((await callFrom(null, quota)).status, 200);
+});
+
+test("トークンの無い Play 版は Play Integrity が通れば使え、通らなければ断る", async () => {
+  const { generateKeyPairSync, createHash } = await import("node:crypto");
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const key = JSON.stringify({ client_email: "sa@x", private_key: privateKey.export({ type: "pkcs8", format: "pem" }) });
+  const body = { artists: ["羊文学"] };
+  const hash = createHash("sha256").update(JSON.stringify(body)).digest("hex");
+  const gemini = globalThis.fetch;
+  let decoded = 0;
+  globalThis.fetch = async (url, init) => {
+    if (url.startsWith("https://oauth2.")) return Response.json({ access_token: "at", expires_in: 3600 });
+    if (url.startsWith("https://playintegrity.")) {
+      decoded++;
+      const verdict = JSON.parse(init.body).integrity_token === "real" ? "PLAY_RECOGNIZED" : "UNRECOGNIZED_VERSION";
+      return Response.json({
+        tokenPayloadExternal: {
+          requestDetails: { requestPackageName: "app.otoshirase", requestHash: hash, timestampMillis: String(Date.now()) },
+          appIntegrity: { appRecognitionVerdict: verdict },
+          deviceIntegrity: { deviceRecognitionVerdict: ["MEETS_DEVICE_INTEGRITY"] },
+        },
+      });
+    }
+    return gemini(url, init);
+  };
+  const playOnly = { APP_TOKEN: "", PLAY_INTEGRITY_SA_KEY: key };
+  geminiReplies.push(ok(["never young beach"]));
+  assert.equal((await callFrom(null, playOnly, { "X-Play-Integrity": "real" }, body)).status, 200);
+  assert.equal((await callFrom(null, playOnly, { "X-Play-Integrity": "repackaged" }, body)).status, 401);
+  assert.equal((await callFrom(null, playOnly, {}, body)).status, 401);
+  assert.equal(decoded, 2);
+  // APK で配った版のトークンも、Play Integrity と並べて使い続けられる
+  assert.equal((await callFrom(null, { PLAY_INTEGRITY_SA_KEY: key }, { Authorization: "Bearer secret" }, body)).status, 200);
+});

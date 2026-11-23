@@ -20,7 +20,8 @@ LLM の API キーをアプリに入れないために置いている。
 
 ```
 POST /v1/suggestions
-Authorization: Bearer <APP_TOKEN>
+Authorization: Bearer <APP_TOKEN>          // 開発版・APK で配った版
+X-Play-Integrity: <Play Integrity のトークン>  // Play 版（どちらか一方）
 Content-Type: application/json
 
 {"artists": ["羊文学", "YOASOBI"]}        // 1〜30 件、1 件 100 文字まで
@@ -30,14 +31,35 @@ Content-Type: application/json
 | --- | --- |
 | 200 | `{"suggestions": ["never young beach", ...]}`（最大 15 件。入力に含まれる名前は除いてある） |
 | 400 / 413 | 入力が不正・大きすぎる |
-| 401 | トークンが違う |
+| 401 | トークンが違う、または Play Integrity を通らない |
 | 429 | 回数制限（1 IP あたり 10 秒 2 回・1 分 10 回）。`Retry-After` 秒待てばよい |
+| 451 | EEA・英国・スイスからの呼び出し（Gemini 無料枠の規約のため。`src/guard/region.js`） |
 | 502 | `{"suggestions": [], "error": "upstream unavailable"}`。Gemini が失敗・タイムアウト |
+| 503 | 全体の 1 日の上限（`DAILY_LLM_LIMIT`、UTC で区切る）に達した、または Play Integrity の確認先が落ちている。`Retry-After` あり |
 
 呼び出し側は 200 以外をすべて「今は提案なし」として扱えばよい。Android 以外（将来の iOS など）からも同じ形で呼べる。
 
 - Gemini は 10 秒で打ち切り、429・5xx のときだけ 1 回やり直す（`src/llm/gemini.js`）
 - 同じアーティストの組み合わせ（順番・表記ゆれは無視）と同じ LLM・モデルへの結果は 7 日キャッシュする。空の結果は覚えない
+
+## 守り（`src/guard/`）
+
+- **地域**: Cloudflare が付ける国コードで EEA・英国・スイスを断る。Play の配信国からも外している
+- **1 日の上限**: 全利用者を合わせた LLM の呼び出し回数を Durable Object（`DailyQuotaCounter`）で数える。キャッシュから返した分は数えない。上限は `wrangler.toml` の `DAILY_LLM_LIMIT`
+- **呼べるアプリ**: トークン（`APP_TOKEN`）か Play Integrity のどちらかを通ったものだけ。トークンは APK から抜けるので、Play 版には入れない。APK で配った版のためにトークンの経路は残している
+  - Play Integrity は標準リクエスト。本文の SHA-256（16 進）を `requestHash` にし、パッケージ名・ハッシュ・5 分以内・`PLAY_RECOGNIZED`・`MEETS_DEVICE_INTEGRITY` を確かめる
+
+### Play Integrity のセットアップ（本人の作業・Play Console に登録してから）
+
+1. Play Console → アプリ → **テストとリリース → アプリの完全性** → Play Integrity API で Google Cloud プロジェクトをリンクする（Gemini のキーを作ったプロジェクトでよい。課金は要らない）。表示される**プロジェクト番号**を控える
+2. Google Cloud コンソールのそのプロジェクトで「Play Integrity API」を有効にする
+3. IAM と管理 → サービスアカウント → 作成（ロールは付けなくてよい）→ 鍵 → 鍵を追加 → JSON。ダウンロードした JSON は 1Password などに保管し、リポジトリに入れない
+4. Worker に入れる
+   ```
+   cd server
+   npx wrangler secret put PLAY_INTEGRITY_SA_KEY < ~/Downloads/<鍵>.json
+   ```
+5. アプリ側は `local.properties` に `play.cloudProjectNumber=<1 の番号>` を書いて Play 版を組み上げる
 
 ## 初回のセットアップ（本人の作業）
 
