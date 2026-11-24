@@ -418,20 +418,15 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 
     if (!granted) {
-        // 設定画面を開く前に、何を読んで何を読まないかを見せて同意をもらう（Google Play の「目立つ開示」）
-        var disclose by rememberSaveable { mutableStateOf(false) }
+        // 設定画面を開く前に、手順と何を読むかをシートで見せる（Google Play の「目立つ開示」）。
+        // 設定から戻っても許可されていなければシートを残し、手順を見返せるようにする
+        var guide by rememberSaveable { mutableStateOf(false) }
         Empty(
             stringResource(R.string.plays_intro_body),
-            stringResource(R.string.allow) to { disclose = true },
+            stringResource(R.string.allow) to { guide = true },
             title = stringResource(R.string.plays_intro_title),
         )
-        if (disclose) ListenerDisclosure(
-            onAgree = {
-                disclose = false
-                ctx.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-            },
-            onDecline = { disclose = false },
-        )
+        if (guide) AccessGuideSheet(onDismiss = { guide = false })
         return
     }
     if (plays.isEmpty()) {
@@ -494,17 +489,6 @@ private fun artistImageById(id: Long): String? =
 @Composable
 private fun artistImageByName(name: String): String? =
     produceState<String?>(null, name) { value = ArtistImages.forName(name) }.value
-
-@Composable
-private fun ListenerDisclosure(onAgree: () -> Unit, onDecline: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDecline,
-        title = { Text(stringResource(R.string.listener_disclosure_title)) },
-        text = { Text(stringResource(R.string.listener_disclosure_body)) },
-        confirmButton = { TextButton(onClick = onAgree) { Text(stringResource(R.string.listener_disclosure_agree)) } },
-        dismissButton = { TextButton(onClick = onDecline) { Text(stringResource(R.string.not_now)) } },
-    )
-}
 
 private fun listenerGranted(ctx: android.content.Context) =
     NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
