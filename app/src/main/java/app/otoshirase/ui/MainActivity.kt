@@ -801,8 +801,8 @@ private fun SuggestionInvite(onLater: () -> Unit, onChoose: () -> Unit) {
 
 @Composable
 private fun FrequencyDialog(current: SuggestionFrequency, onDismiss: () -> Unit, onConfirm: (SuggestionFrequency) -> Unit) {
-    // オフのまま開いたときは、選びやすいよう毎週を選んだ状態で出す
-    var picked by remember { mutableStateOf(if (current == SuggestionFrequency.Off) SuggestionFrequency.Weekly else current) }
+    // 利用者が選んでいない頻度を先に選んでおかない。今の設定（最初はオフ）のまま開く
+    var picked by remember { mutableStateOf(current) }
     val c = MaterialTheme.colorScheme
     AlertDialog(
         onDismissRequest = onDismiss,
