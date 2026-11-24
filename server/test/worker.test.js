@@ -251,6 +251,10 @@ test("1 回の呼び出しごとに結果・所要時間・キャッシュの当
   assert.equal(first.artists_count, 2);
   assert.equal(first.exclude_count, 1);
   assert.equal(first.suggestions_count, 1);
+  assert.deepEqual(first.artists, ["羊文学", "YOASOBI"]);
+  assert.deepEqual(first.exclude, ["toe"]);
+  assert.deepEqual(first.llm_raw, ["never young beach"]);
+  assert.deepEqual(first.suggestions, ["never young beach"]);
   assert.equal(typeof first.duration_ms, "number");
   assert.equal(typeof first.llm_ms, "number");
   const attempt = logs.find((l) => l.message === "llm_attempt");
@@ -300,12 +304,12 @@ test("1 日の上限に使った回数をログに残す", async () => {
   assert.equal(requestLog().outcome, "daily_limit");
 });
 
-test("IP・トークン・好きなアーティストの名前はログに残さない", async () => {
+test("IP とトークンはログに残さない", async () => {
   geminiReplies.push(ok(["never young beach"]));
   await callFrom("JP", {}, { Authorization: "Bearer secret", "CF-Connecting-IP": "203.0.113.9" }, { artists: ["羊文学"] });
   await callFrom("JP", {}, { Authorization: "Bearer wrong", "CF-Connecting-IP": "203.0.113.9" }, { artists: ["羊文学"] });
   const text = JSON.stringify(logs);
-  for (const secret of ["203.0.113.9", "secret", "wrong", "羊文学", "key"]) assert.ok(!text.includes(secret), secret);
+  for (const secret of ["203.0.113.9", "secret", "wrong", "key"]) assert.ok(!text.includes(secret), secret);
 });
 
 test("思わぬ例外でも 500 を返し、エラーとして残す", async () => {

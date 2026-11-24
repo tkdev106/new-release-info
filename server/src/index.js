@@ -120,6 +120,10 @@ async function handle(request, env, ctx, trace, log, now) {
   }
   trace.artists_count = req.artists.length;
   trace.exclude_count = req.exclude.length;
+  // AI の答えの良し悪しを後から確かめられるよう、入力と答えの名前を残す（本人の判断で、アーティスト名は個人情報として扱わない）。
+  // Workers Logs の保存期間（無料プランは 3 日）で消え、IP などとは結び付けない
+  trace.artists = req.artists;
+  trace.exclude = req.exclude;
 
   const cache = caches.default;
   const cacheUrl = new URL(`/cache/${await cacheKey(req.artists, provider.id, req.exclude)}`, url.origin);
@@ -154,6 +158,8 @@ async function handle(request, env, ctx, trace, log, now) {
   try {
     const candidates = await provider.suggestArtists(buildPrompt(req.artists, req.exclude));
     trace.llm_candidates = Array.isArray(candidates) ? candidates.length : 0;
+    // 検証で落とした名前も見えるよう、LLM の生の答えも残す（長すぎる応答でログが膨らまないよう切る）
+    trace.llm_raw = Array.isArray(candidates) ? candidates.slice(0, 30).map((c) => String(c).slice(0, 100)) : undefined;
     suggestions = sanitizeSuggestions(candidates, req.artists, req.exclude);
   } catch (e) {
     // 理由はログにだけ残す。呼び出し側は「今は出せない」とだけ分かればよい
@@ -163,6 +169,7 @@ async function handle(request, env, ctx, trace, log, now) {
   }
   trace.llm_ms = now() - llmStarted;
   trace.suggestions_count = suggestions.length;
+  trace.suggestions = suggestions;
 
   const res = json({ suggestions }, 200, { "Cache-Control": `max-age=${CACHE_TTL_SECONDS}` });
   // 空の結果は一時的な不調のことがあるので覚えない

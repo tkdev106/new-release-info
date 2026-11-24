@@ -2,8 +2,8 @@
 // 今は 1 件を 1 つの JSON にして console に出し、Cloudflare の Workers Logs（wrangler.toml の observability）が
 // フィールドごとに拾って検索・集計できるようにしている。送り先を変えるときはここに実装を足せばよい。
 //
-// 個人を特定できる値（IP・トークン・Play Integrity のトークン）は渡さない。好きなアーティストも件数だけにする。
-// 失敗の調べ物には件数と結果の種類で足り、利用者の好みを残す理由が無いため。
+// 個人を特定できる値（IP・トークン・Play Integrity のトークン）は渡さない。
+// アーティスト名は本人の判断で個人情報として扱わず、AI の答えを確かめるために残す。
 
 /**
  * @typedef {Record<string, unknown>} LogFields
