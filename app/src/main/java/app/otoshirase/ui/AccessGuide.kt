@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -200,7 +203,12 @@ private fun DetailScreen(hintSwitch: Boolean) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, null, Modifier.size(24.dp), tint = c.onSurface)
             }
             Spacer(Modifier.width(20.dp))
-            Text(sysString(R.string.guide_sys_listener_title), fontSize = 22.sp, lineHeight = 28.sp, color = c.onSurface)
+            // 設定は見出しを 1 行に収めるので、長い言語では字を小さくして 1 行にする
+            BasicText(
+                sysString(R.string.guide_sys_listener_title), maxLines = 1,
+                style = TextStyle(color = c.onSurface),
+                autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 22.sp),
+            )
         }
         Spacer(Modifier.height(36.dp))
         AppIcon(Modifier.align(Alignment.CenterHorizontally), 69.dp)
