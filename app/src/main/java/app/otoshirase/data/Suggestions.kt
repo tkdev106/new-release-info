@@ -48,10 +48,10 @@ class SuggestionFinder(
         known: Map<String, CatalogLookup> = emptyMap(),
         /** 新しく問い合わせた結果。呼び出し側が保存する */
         onLookup: (String, CatalogLookup) -> Unit = { _, _ -> },
-        /** 1 件確かめるたびに、それまでに見つかった分を渡す。全部終わるのを待たずに出すため */
-        onFound: (List<Suggestion>) -> Unit = {},
         /** 前に出した名前。中継に除いてもらう */
         exclude: List<String> = emptyList(),
+        /** 1 件確かめるたびに、それまでに見つかった分を渡す。全部終わるのを待たずに出すため */
+        onFound: (List<Suggestion>) -> Unit = {},
     ): List<Suggestion> {
         if (liked.isEmpty()) return emptyList()
         val candidates = source.suggest(liked.map { it.name }.take(MAX_SENT), exclude)
