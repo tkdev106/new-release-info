@@ -88,4 +88,30 @@
     <string name="listener_disclosure_body">New Releases は通知へのアクセスを、音楽アプリで再生中の曲（アーティスト名とアプリ）を知るためだけに使います。再生回数を数えて、よく聴くアーティストを表示します。\n\n通知の内容は読みません。再生回数はこの端末の中だけに保存し、外部には送りません。</string>
     <string name="listener_disclosure_agree">同意して続ける</string>
     <string name="not_now">今はしない</string>
+    <!-- AI のおすすめの通知 -->
+    <string name="suggest_bell">おすすめの通知</string>
+    <string name="suggest_invite_title">新しいおすすめを通知で受け取る</string>
+    <string name="suggest_invite_body">登録したアーティストをもとにAIが新しいアーティストを見つけたら、お知らせします。</string>
+    <string name="suggest_invite_later">あとで</string>
+    <string name="suggest_invite_choose">頻度を選ぶ</string>
+    <string name="suggest_freq_title">おすすめの通知</string>
+    <string name="suggest_freq_body">新しいおすすめがあるときにお知らせします。</string>
+    <string name="suggest_freq_note">サービスの不具合などでおすすめを取得できないときは、通知されないことがあります。</string>
+    <string name="suggest_freq_off">オフ</string>
+    <string name="suggest_freq_daily">毎日</string>
+    <string name="suggest_freq_3days">3日ごと</string>
+    <string name="suggest_freq_weekly">毎週</string>
+    <string name="suggest_status_daily">毎日、新しいおすすめをお知らせします。</string>
+    <string name="suggest_status_3days">3日ごとに、新しいおすすめをお知らせします。</string>
+    <string name="suggest_status_weekly">毎週、新しいおすすめをお知らせします。</string>
+    <string name="suggest_blocked">通知がオフのため、おすすめをお届けできません。</string>
+    <string name="open_settings">設定を開く</string>
+    <string name="notif_channel_suggestions">AIのおすすめ</string>
+    <string name="notif_channel_suggestions_desc">AIがおすすめする新しいアーティスト</string>
+    <plurals name="notif_suggest_many">
+        <item quantity="other">新しいおすすめが%d件</item>
+    </plurals>
+    <string name="notif_suggest_one">新しいおすすめ：%s</string>
+    <string name="notif_suggest_tap">タップして表示</string>
+    <string name="list_separator">、</string>
 </resources>

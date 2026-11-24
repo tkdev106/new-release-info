@@ -13,7 +13,8 @@ import { buildPrompt, cacheKey, parseRequest, sanitizeSuggestions } from "./sugg
 export { DailyQuotaCounter } from "./guard/quota.js";
 
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
-const MAX_BODY_BYTES = 8 * 1024;
+// 好きなアーティスト 30 件と除く名前 50 件が日本語の長い名前でも収まる大きさ
+const MAX_BODY_BYTES = 16 * 1024;
 const DEFAULT_DAILY_LLM_LIMIT = 500;
 
 // アクセストークンを呼び出しをまたいで使い回すため、同じ鍵のあいだは同じものを持っておく
@@ -70,7 +71,7 @@ export default {
     if (!req.ok) return json({ error: req.error }, 400);
 
     const cache = caches.default;
-    const cacheUrl = new URL(`/cache/${await cacheKey(req.artists, provider.id)}`, url.origin);
+    const cacheUrl = new URL(`/cache/${await cacheKey(req.artists, provider.id, req.exclude)}`, url.origin);
     const hit = await cache.match(cacheUrl);
     if (hit) return hit;
 
@@ -92,8 +93,8 @@ export default {
 
     let suggestions;
     try {
-      const candidates = await provider.suggestArtists(buildPrompt(req.artists));
-      suggestions = sanitizeSuggestions(candidates, req.artists);
+      const candidates = await provider.suggestArtists(buildPrompt(req.artists, req.exclude));
+      suggestions = sanitizeSuggestions(candidates, req.artists, req.exclude);
     } catch (e) {
       // 理由はログにだけ残す。呼び出し側は「今は出せない」とだけ分かればよい
       console.error("llm failed", provider.id, String(e));

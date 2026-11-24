@@ -28,7 +28,7 @@ test("キーはヘッダーで送り、指示とデータを分けて構造化�
   assert.ok(!calls[0].url.includes("key"));
   const body = JSON.parse(calls[0].init.body);
   assert.equal(body.generationConfig.responseMimeType, "application/json");
-  assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), { likedArtists: ["羊文学"] });
+  assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), { likedArtists: ["羊文学"], alreadySuggested: [] });
 });
 
 test("モデル名がキャッシュのキーに入るようにする", () => {

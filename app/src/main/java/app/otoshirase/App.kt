@@ -10,6 +10,7 @@ import app.otoshirase.data.TokenAuth
 import app.otoshirase.data.WorkerSuggestionSource
 import app.otoshirase.notify.Notifier
 import app.otoshirase.work.CheckWorker
+import app.otoshirase.work.SuggestionWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,6 +32,7 @@ class App : Application() {
             suggestions = SuggestionRefresher(
                 SuggestionFinder(WorkerSuggestionSource(BuildConfig.SUGGEST_URL, auth), AppleArtistCatalog),
             )
+            SuggestionWorker.schedule(this, Store.state.value.suggestionFrequency, changed = false)
         }
     }
 

@@ -24,8 +24,11 @@ Authorization: Bearer <APP_TOKEN>          // 開発版・APK で配った版
 X-Play-Integrity: <Play Integrity のトークン>  // Play 版（どちらか一方）
 Content-Type: application/json
 
-{"artists": ["羊文学", "YOASOBI"]}        // 1〜30 件、1 件 100 文字まで
+{"artists": ["羊文学", "YOASOBI"],        // 1〜30 件、1 件 100 文字まで
+ "exclude": ["never young beach"]}       // 省略可。前に出した名前（50 件まで）。これらは返さない
 ```
+
+`exclude` は、アプリが定期的におすすめを取り直すときに同じ名前ばかり返さないためのもの。キャッシュのキーにも入る。
 
 | 状態 | 本文 |
 | --- | --- |
@@ -40,7 +43,7 @@ Content-Type: application/json
 呼び出し側は 200 以外をすべて「今は提案なし」として扱えばよい。Android 以外（将来の iOS など）からも同じ形で呼べる。
 
 - Gemini は 10 秒で打ち切り、429・5xx のときだけ 1 回やり直す（`src/llm/gemini.js`）
-- 同じアーティストの組み合わせ（順番・表記ゆれは無視）と同じ LLM・モデルへの結果は 7 日キャッシュする。空の結果は覚えない
+- 同じアーティストの組み合わせ・同じ `exclude`（順番・表記ゆれは無視）と同じ LLM・モデルへの結果は 7 日キャッシュする。空の結果は覚えない
 
 ## 守り（`src/guard/`）
 

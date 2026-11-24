@@ -10,6 +10,7 @@
 | 画面 | `ui/MainActivity.kt`, `ui/Theme.kt` |
 | ウィジェット | `widget/` |
 | 通知 | `notify/Notifier.kt` |
+| おすすめの定期通知（頻度・重複の判断） | `data/SuggestionSchedule.kt`, `work/SuggestionWorker.kt` |
 | よく聴くアーティストの集計 | `playback/NowPlayingService.kt` |
 | 文言 | `res/values/strings.xml`（英語・既定）, `res/values-ja/strings.xml`（日本語） |
 | おすすめアーティスト（アプリ側） | `data/Suggestions.kt`（判断とインターフェース）, `data/WorkerSuggestionSource.kt`・`data/AppleArtistCatalog.kt`（実装）、`data/RequestAuth.kt`・`data/PlayIntegrityAuth.kt`（中継への名乗り方。APK 版はトークン、Play 版は Play Integrity）, `App.kt`（組み立て） |
@@ -36,7 +37,7 @@
 
 ## 決めたこと（覆すときはユーザーに聞く）
 
-- おすすめアーティストは Gemini に名前だけを出させ、Apple のカタログで実在を確かめたものだけを出す。キーは Cloudflare Worker（`server/`）に置き、アプリには入れない。LLM は Worker の `LlmProvider`（`server/src/llm/`）越しに使い、差し替えられるようにする。Firebase AI Logic は Google Play で配らないと App Check が活きないので採用しない。理由文は出さない。おすすめの取得は利用者が更新ボタンを押したときだけ（通信を増やさないため）
+- おすすめアーティストは Gemini に名前だけを出させ、Apple のカタログで実在を確かめたものだけを出す。キーは Cloudflare Worker（`server/`）に置き、アプリには入れない。LLM は Worker の `LlmProvider`（`server/src/llm/`）越しに使い、差し替えられるようにする。Firebase AI Logic は Google Play で配らないと App Check が活きないので採用しない。理由文は出さない。おすすめの取得は、利用者が更新ボタンを押したときと、利用者が選んだ頻度（オフ／毎日／3日ごと／毎週、既定はオフ）での裏の取り直し（`work/SuggestionWorker.kt`）だけ。裏では初めて出す人がいたときだけ 1 件にまとめて通知する。同じ名前ばかり返らないよう、前に出した名前を中継に `exclude` で渡す
 - **費用がかかるものは使わない。** Spotify Web API（開発者の Premium 必須・利用者 5 人まで・発売予定が取れない）と Apple Music API（年 $99）は採用しない
 - よく聴くアーティストは「通知へのアクセス」で音楽アプリの再生中情報（MediaSession）だけを読んで集計する。通知の中身は読まない
 - 色は端末の壁紙から取る（dynamic color）。書体は端末標準。ダークモード対応
