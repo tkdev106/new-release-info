@@ -84,9 +84,7 @@
     <string name="suggestions_hint">登録したアーティストをもとに、AI が似たアーティストを提案します。</string>
     <string name="suggestions_find">おすすめを探す</string>
     <string name="suggestions_need_artists">アーティストを登録すると、似たアーティストをおすすめします。</string>
-    <string name="listener_disclosure_title">通知へのアクセスについて</string>
-    <string name="listener_disclosure_body">New Releases は通知へのアクセスを、音楽アプリで再生中の曲（アーティスト名とアプリ）を知るためだけに使います。再生回数を数えて、よく聴くアーティストを表示します。\n\n通知の内容は読みません。再生回数はこの端末の中だけに保存し、外部には送りません。</string>
-    <string name="listener_disclosure_agree">同意して続ける</string>
+    <string name="listener_disclosure_body">New Releases は通知へのアクセスを、音楽アプリで再生中の曲（アーティスト名とアプリ）を知るためだけに使用します。再生回数を数えて、よく聴くアーティストを表示します。\n\n通知の内容は読みません。再生回数はお使いの端末のみに保存し、外部には送信しません。</string>
     <string name="not_now">今はしない</string>
     <!-- AI のおすすめの通知 -->
     <string name="suggest_bell">おすすめの通知</string>
@@ -114,4 +112,35 @@
     <string name="notif_suggest_one">新しいおすすめ：%s</string>
     <string name="notif_suggest_tap">タップして表示</string>
     <string name="list_separator">、</string>
+    <string name="guide_title">通知へのアクセスを有効にする</string>
+    <string name="guide_subtitle">設定で 2 回タップするだけです。</string>
+    <string name="guide_step1_title">「通知へのアクセスを許可」を有効にする</string>
+    <string name="guide_step1_body">設定で New Releases の画面が開きます。トグルスイッチを有効にしてください。</string>
+    <string name="guide_step2_title">「許可」をタップする</string>
+    <string name="guide_step2_body">確認画面が表示されます。「許可」をタップしてください。</string>
+    <string name="guide_step3_title">このアプリに戻る</string>
+    <string name="guide_step3_body">戻るボタンで戻ってください。音楽を再生すると、よく聴くアーティストがここに表示されます。</string>
+    <string name="guide_privacy_heading">New Releases が読み取る情報</string>
+    <string name="guide_open_settings">設定を開く</string>
+    <string name="guide_step_counter">ステップ %1$d / %2$d</string>
+    <string name="guide_sys_listener_title">通知の確認、返信、管理</string>
+    <string name="guide_sys_allow_access">通知へのアクセスを許可</string>
+    <string name="guide_sys_realtime">リアルタイム</string>
+    <string name="guide_sys_realtime_summary">使用中のアプリ、ナビ、着信などからの継続的な通知</string>
+    <string name="guide_sys_conversations">会話</string>
+    <string name="guide_sys_conversations_summary">SMS やテキスト メッセージなどのコミュニケーション</string>
+    <string name="guide_sys_alerting">通知</string>
+    <string name="guide_sys_alerting_summary">スマートフォンの設定を基に着信音またはバイブレーションが有効になります</string>
+    <string name="guide_sys_silent">マナー</string>
+    <string name="guide_sys_silent_summary">通知があっても、着信音は鳴らず、バイブレーションも作動しません</string>
+    <string name="guide_sys_dialog_title">New Releases による通知へのアクセスを許可しますか？</string>
+    <string name="guide_sys_dialog_intro">New Releases アプリは次のことができるようになります。</string>
+    <string name="guide_sys_read">通知の読み取り</string>
+    <string name="guide_sys_read_summary">通知を読み取ることができます。通知には、連絡先、メッセージ、写真などの個人情報も含まれます。</string>
+    <string name="guide_sys_reply">メールへの返信</string>
+    <string name="guide_sys_reply_summary">メッセージに返信できるほか、通知をスヌーズ、非表示にしたり、電話に出たりするなど、通知内のボタン操作を実行することもできます。</string>
+    <string name="guide_sys_settings">設定の変更</string>
+    <string name="guide_sys_settings_summary">モードの管理や有効化、関連する設定の変更を行えます。</string>
+    <string name="guide_sys_allow">許可</string>
+    <string name="guide_sys_deny">許可しない</string>
 </resources>

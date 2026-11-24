@@ -92,9 +92,7 @@
     <string name="suggestions_hint">AI suggests similar artists based on the ones you\'ve added.</string>
     <string name="suggestions_find">Find suggestions</string>
     <string name="suggestions_need_artists">Add an artist to get suggestions.</string>
-    <string name="listener_disclosure_title">About notification access</string>
     <string name="listener_disclosure_body">New Releases uses notification access only to see which song is playing in your music apps (the artist name and the app). It counts plays to show your most-played artists.\n\nIt does not read the content of your notifications. Play counts stay on this device and are never sent anywhere.</string>
-    <string name="listener_disclosure_agree">Agree and continue</string>
     <string name="not_now">Not now</string>
     <!-- AI のおすすめの通知 -->
     <string name="suggest_bell">Suggestion notifications</string>
@@ -124,4 +122,41 @@
     <string name="notif_suggest_one">New suggestion: %s</string>
     <string name="notif_suggest_tap">Tap to see</string>
     <string name="list_separator">", "</string>
+    <!-- 通知へのアクセスの手順シート -->
+    <string name="guide_title">Turn on notification access</string>
+    <string name="guide_subtitle">Just two taps in Settings.</string>
+    <string name="guide_step1_title">Turn on “Allow notification access”</string>
+    <string name="guide_step1_body">Settings opens on New Releases. Turn on the switch.</string>
+    <string name="guide_step2_title">Tap “Allow”</string>
+    <string name="guide_step2_body">A confirmation will appear. Tap Allow.</string>
+    <string name="guide_step3_title">Come back to this app</string>
+    <string name="guide_step3_body">Go back. As you play music, your most-played artists will show up here.</string>
+    <string name="guide_privacy_heading">What New Releases reads</string>
+    <string name="guide_open_settings">Open Settings</string>
+    <string name="guide_step_counter">Step %1$d of %2$d</string>
+    <!-- 手順の図に描く設定画面の文言。Android 17 の設定と同じにする（訳さず、端末の表示を写す） -->
+    <string name="guide_sys_listener_title">Notification read, reply &amp; control</string>
+    <string name="guide_sys_allow_access">Allow notification access</string>
+    <string name="guide_sys_realtime">Real-time</string>
+    <string name="guide_sys_realtime_summary">Ongoing communication from apps in use, navigation, phone calls, and more</string>
+    <string name="guide_sys_conversations">Conversations</string>
+    <string name="guide_sys_conversations_summary">SMS, text messages, and other communications</string>
+    <string name="guide_sys_alerting">Notifications</string>
+    <string name="guide_sys_alerting_summary">May ring or vibrate based on settings</string>
+    <string name="guide_sys_silent">Silent</string>
+    <string name="guide_sys_silent_summary">Notifications that never make sound or vibrations</string>
+    <string name="guide_sys_dialog_title">Allow notification access for New Releases?</string>
+    <string name="guide_sys_dialog_intro">The New Releases app will be able to:</string>
+    <string name="guide_sys_read">Read your notifications</string>
+    <string name="guide_sys_read_summary">It can read your notifications, including personal information such as contacts, messages, and photos.</string>
+    <string name="guide_sys_reply">Reply to messages</string>
+    <string name="guide_sys_reply_summary">It can reply to messages and take action on buttons in notifications, including snoozing or dismissing notifications and answering calls.</string>
+    <string name="guide_sys_settings">Change settings</string>
+    <string name="guide_sys_settings_summary">It can manage and activate Modes, and change related settings.</string>
+    <string name="guide_sys_allow">Allow</string>
+    <string name="guide_sys_deny">Deny</string>
+    <!-- 戻ったあとの様子の図に出す架空のアーティスト -->
+    <string name="guide_demo_artist_1" translatable="false">Neon Orchard</string>
+    <string name="guide_demo_artist_2" translatable="false">Velvet Coast</string>
+    <string name="guide_demo_artist_3" translatable="false">Mira Kowa</string>
 </resources>
