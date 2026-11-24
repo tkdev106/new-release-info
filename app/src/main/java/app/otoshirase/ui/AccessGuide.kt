@@ -3,6 +3,8 @@ package app.otoshirase.ui
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -127,18 +130,17 @@ private fun GuideStep(page: Int) {
             Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surfaceContainerHighest).padding(vertical = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
-            // 見せる高さをそろえるため、縦に長いダイアログの図は幅を狭くする
-            val frame = Modifier.clip(RoundedCornerShape(10.dp)).border(1.dp, c.outlineVariant, RoundedCornerShape(10.dp))
-            when (page) {
-                0 -> Box(frame.fillMaxWidth(0.62f)) { Scaled(600.dp) { DetailScreen(hintSwitch = true) } }
-                1 -> Box(frame.fillMaxWidth(0.62f * 600 / 700)) {
-                    Scaled(700.dp, offset = 105.dp) {
+            // どのページも同じ大きさの枠にして、めくっても高さが変わらないようにする
+            Box(Modifier.fillMaxWidth(0.62f).clip(RoundedCornerShape(10.dp)).border(1.dp, c.outlineVariant, RoundedCornerShape(10.dp))) {
+                when (page) {
+                    0 -> Scaled(690.dp) { DetailScreen(hintSwitch = true) }
+                    1 -> Scaled(690.dp, offset = 110.dp) {
                         DetailScreen(hintSwitch = false)
                         Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.5f)))
                         AllowDialog(Modifier.padding(start = 26.dp, end = 27.dp, top = 119.dp))
                     }
+                    else -> Scaled(690.dp) { PlaysScreenSketch() }
                 }
-                else -> Box(frame.fillMaxWidth(0.62f)) { Scaled(600.dp) { PlaysScreenSketch() } }
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -146,7 +148,8 @@ private fun GuideStep(page: Int) {
         Spacer(Modifier.height(2.dp))
         Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = c.onSurface)
         Spacer(Modifier.height(4.dp))
-        Text(stringResource(body), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant)
+        // 文が 1 行の手順と 2 行の手順でシートの高さが変わらないよう、2 行分の高さを取る
+        Text(stringResource(body), style = MaterialTheme.typography.bodyMedium, color = c.onSurfaceVariant, minLines = 2)
     }
 }
 
@@ -197,13 +200,13 @@ private fun DetailScreen(hintSwitch: Boolean) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, null, Modifier.size(24.dp), tint = c.onSurface)
             }
             Spacer(Modifier.width(20.dp))
-            Text(stringResource(R.string.guide_sys_listener_title), fontSize = 26.sp, lineHeight = 32.sp, color = c.onSurface)
+            Text(sysString(R.string.guide_sys_listener_title), fontSize = 22.sp, lineHeight = 28.sp, color = c.onSurface)
         }
         Spacer(Modifier.height(36.dp))
         AppIcon(Modifier.align(Alignment.CenterHorizontally), 69.dp)
         Spacer(Modifier.height(12.dp))
         Text(stringResource(R.string.app_name), fontSize = 22.sp, color = c.onSurface, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Text(stringResource(R.string.listener_label), fontSize = 16.sp, color = c.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text(sysString(R.string.listener_label), fontSize = 16.sp, color = c.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(20.dp))
         Row(
             Modifier.padding(horizontal = 16.dp).fillMaxWidth()
@@ -211,7 +214,7 @@ private fun DetailScreen(hintSwitch: Boolean) {
                 .background(s.card).padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.guide_sys_allow_access), fontSize = 18.sp, color = c.onSurface, modifier = Modifier.weight(1f))
+            Text(sysString(R.string.guide_sys_allow_access), fontSize = 18.sp, color = c.onSurface, modifier = Modifier.weight(1f))
             Box(if (hintSwitch) Modifier.border(3.dp, Hint, CircleShape).padding(5.dp) else Modifier.padding(5.dp)) {
                 Switch(
                     checked = false, onCheckedChange = null,
@@ -239,8 +242,8 @@ private fun GreyCard(icon: Painter, @StringRes title: Int, @StringRes summary: I
         Icon(icon, null, Modifier.size(24.dp), tint = dim)
         Spacer(Modifier.width(20.dp))
         Column(Modifier.weight(1f)) {
-            Text(stringResource(title), fontSize = 18.sp, color = dim)
-            Text(stringResource(summary), fontSize = 16.sp, lineHeight = 22.sp, color = dim)
+            Text(sysString(title), fontSize = 18.sp, color = dim)
+            Text(sysString(summary), fontSize = 16.sp, lineHeight = 22.sp, color = dim)
         }
         Spacer(Modifier.width(16.dp))
         Box(Modifier.size(20.dp).clip(RoundedCornerShape(3.dp)).background(dim), contentAlignment = Alignment.Center) {
@@ -258,11 +261,11 @@ private fun AllowDialog(modifier: Modifier) {
         AppIcon(Modifier.align(Alignment.CenterHorizontally), 36.dp)
         Spacer(Modifier.height(16.dp))
         Text(
-            stringResource(R.string.guide_sys_dialog_title), fontSize = 22.sp, lineHeight = 28.sp, color = c.onSurface,
+            sysString(R.string.guide_sys_dialog_title), fontSize = 22.sp, lineHeight = 28.sp, color = c.onSurface,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.guide_sys_dialog_intro), fontSize = 16.sp, lineHeight = 24.sp, color = c.onSurface)
+        Text(sysString(R.string.guide_sys_dialog_intro), fontSize = 16.sp, lineHeight = 24.sp, color = c.onSurface)
         listOf(
             Triple(EyeIcon, R.string.guide_sys_read, R.string.guide_sys_read_summary),
             Triple(ChatIcon, R.string.guide_sys_reply, R.string.guide_sys_reply_summary),
@@ -273,8 +276,8 @@ private fun AllowDialog(modifier: Modifier) {
                 Icon(icon, null, Modifier.size(24.dp), tint = c.onSurfaceVariant)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(stringResource(title), fontSize = 16.sp, color = c.onSurface)
-                    Text(stringResource(summary), fontSize = 14.sp, lineHeight = 20.sp, color = c.onSurfaceVariant)
+                    Text(sysString(title), fontSize = 16.sp, color = c.onSurface)
+                    Text(sysString(summary), fontSize = 14.sp, lineHeight = 20.sp, color = c.onSurfaceVariant)
                 }
             }
         }
@@ -282,10 +285,10 @@ private fun AllowDialog(modifier: Modifier) {
         Button(
             onClick = {}, modifier = Modifier.fillMaxWidth().height(40.dp),
             border = BorderStroke(3.dp, Hint),
-        ) { Text(stringResource(R.string.guide_sys_allow), fontSize = 16.sp) }
+        ) { Text(sysString(R.string.guide_sys_allow), fontSize = 16.sp) }
         Spacer(Modifier.height(16.dp))
         OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(40.dp)) {
-            Text(stringResource(R.string.guide_sys_deny), fontSize = 16.sp)
+            Text(sysString(R.string.guide_sys_deny), fontSize = 16.sp)
         }
     }
 }
@@ -312,6 +315,19 @@ private fun PlaysScreenSketch() {
             }
         }
     }
+}
+
+/**
+ * 設定アプリは端末の言語で表示されるので、アプリだけ別の言語にしていても図の文言は端末の言語にそろえる
+ */
+@Composable
+private fun sysString(@StringRes id: Int): String {
+    val ctx = LocalContext.current
+    val sys = remember(ctx) {
+        val config = Configuration(ctx.resources.configuration).apply { setLocales(Resources.getSystem().configuration.locales) }
+        ctx.createConfigurationContext(config)
+    }
+    return sys.getString(id)
 }
 
 /** ランチャーと同じ形（紺の丸にレコード）。アダプティブアイコンは painterResource で読めないので重ねて描く */
