@@ -5,7 +5,8 @@
 
 /**
  * @typedef {object} DailyQuota
- * @property {(limit: number) => Promise<boolean>} tryConsume 今日の回数を 1 増やす。上限を超えるなら増やさず false
+ * @property {(limit: number) => Promise<{ ok: boolean, used?: number }>} tryConsume
+ *   今日の回数を 1 増やす。上限を超えるなら増やさず ok: false。used は今日使った回数（残りの見張りに使う）
  */
 
 /** UTC の日付で区切る。次の区切りまでの秒数は Retry-After に使う */
@@ -29,7 +30,8 @@ export function createDailyQuota(env) {
     async tryConsume(limit) {
       const r = await stub.fetch("https://quota/consume", { method: "POST", body: JSON.stringify({ limit, day: dayKey() }) });
       if (!r.ok) throw new Error(`quota HTTP ${r.status}`);
-      return (await r.json()).ok === true;
+      const data = await r.json();
+      return { ok: data.ok === true, used: typeof data.used === "number" ? data.used : undefined };
     },
   };
 }

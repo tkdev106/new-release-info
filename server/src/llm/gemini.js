@@ -1,5 +1,6 @@
 // Gemini（Google AI Studio の API キー）での LlmProvider の実装
 
+import { errorText, silentLogger } from "../log/logger.js";
 import { MAX_SUGGESTIONS } from "../suggest.js";
 
 const TIMEOUT_MS = 10_000;
@@ -20,7 +21,13 @@ const RESPONSE_SCHEMA = {
 };
 
 /** @returns {import("./provider.js").LlmProvider} */
-export function createGeminiProvider({ apiKey, model = DEFAULT_MODEL, fetchImpl = (...a) => fetch(...a) }) {
+export function createGeminiProvider({
+  apiKey,
+  model = DEFAULT_MODEL,
+  fetchImpl = (...a) => fetch(...a),
+  logger = silentLogger,
+  now = Date.now,
+}) {
   model ||= DEFAULT_MODEL;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
@@ -32,11 +39,33 @@ export function createGeminiProvider({ apiKey, model = DEFAULT_MODEL, fetchImpl 
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify(buildRequest(prompt)),
       };
-      for (let attempt = 0; ; attempt++) {
-        const r = await fetchImpl(endpoint, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
-        if (r.ok) return parseResponse(await r.json());
+      const log = logger.with({ llm_provider: `gemini:${model}` });
+      for (let attempt = 1; ; attempt++) {
+        const started = now();
+        let r;
+        try {
+          r = await fetchImpl(endpoint, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        } catch (e) {
+          log.warn("llm_attempt", { attempt, duration_ms: now() - started, error: errorText(e) });
+          throw e;
+        }
+        if (r.ok) {
+          const data = await r.json();
+          // 無料枠の残りを見積もれるよう、使ったトークン数と止まった理由を残す
+          log.info("llm_attempt", {
+            attempt,
+            upstream_status: r.status,
+            duration_ms: now() - started,
+            prompt_tokens: data?.usageMetadata?.promptTokenCount,
+            output_tokens: data?.usageMetadata?.candidatesTokenCount,
+            finish_reason: data?.candidates?.[0]?.finishReason,
+          });
+          return parseResponse(data);
+        }
         // 混雑・一時的な失敗のときだけ 1 回やり直す。それ以外はやり直しても変わらない
-        if (attempt === 0 && (r.status === 429 || r.status >= 500)) {
+        const retry = attempt === 1 && (r.status === 429 || r.status >= 500);
+        log.warn("llm_attempt", { attempt, upstream_status: r.status, duration_ms: now() - started, will_retry: retry });
+        if (retry) {
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
           continue;
         }

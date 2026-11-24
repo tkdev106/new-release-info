@@ -15,7 +15,7 @@
 | 文言 | `res/values/strings.xml`（英語・既定）, `res/values-ja/strings.xml`（日本語） |
 | おすすめアーティスト（アプリ側） | `data/Suggestions.kt`（判断とインターフェース）, `data/WorkerSuggestionSource.kt`・`data/AppleArtistCatalog.kt`（実装）、`data/RequestAuth.kt`・`data/PlayIntegrityAuth.kt`（中継への名乗り方。APK 版はトークン、Play 版は Play Integrity）, `App.kt`（組み立て） |
 | Play に出す手順（署名・版の番号） | `RELEASE.md` |
-| おすすめアーティストの中継（Gemini、Cloudflare Worker） | `server/`（手順は `server/README.md`。テストは `cd server && npm test`） |
+| おすすめアーティストの中継（Gemini、Cloudflare Worker） | `server/`（手順は `server/README.md`。テストは `cd server && npm test`。ログは `server/src/log/` の `Logger` 越しに Workers Logs へ） |
 
 ## コマンド
 
