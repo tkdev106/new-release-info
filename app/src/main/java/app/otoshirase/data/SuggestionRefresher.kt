@@ -16,9 +16,13 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
     private val _partial = MutableStateFlow<List<Suggestion>?>(null)
     val partial: StateFlow<List<Suggestion>?> = _partial
 
-    /** 利用者がボタンを押したときだけ呼ぶ。自動では取り直さない（通信を増やさないため） */
-    suspend fun refresh() {
-        if (!running.compareAndSet(false, true)) return
+    /**
+     * 利用者が押したときと、利用者が選んだ頻度での裏の取り直し（SuggestionWorker）で呼ぶ。
+     * 前に出した名前は中継に除いてもらう。取り直すたびに新しい人が出るように。
+     * @return 今回初めて出したおすすめ。失敗したときと、ほかで取り直し中のときは null
+     */
+    suspend fun refresh(): List<Suggestion>? {
+        if (!running.compareAndSet(false, true)) return null
         _refreshing.value = true
         _partial.value = emptyList()
         val s = Store.state.value
@@ -29,13 +33,21 @@ class SuggestionRefresher(private val finder: SuggestionFinder) {
                 s.artists, s.ignored, s.dismissedSuggestions.toSet(),
                 known = s.catalogLookups,
                 onLookup = { k, v -> looked[k] = v },
-            ) { _partial.value = it }
+                onFound = { _partial.value = it },
+                exclude = SuggestionSchedule.excludeNames(s.suggestionHistory),
+            )
             Store.saveSuggestions(list, now)
             _failed.value = false
+            return SuggestionSchedule.fresh(list, s.suggestionHistory)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: SuggestionsUnavailableInRegion) {
+            Store.update { it.copy(suggestionsRegionBlockedAt = now) }
+            _failed.value = true
+            return null
         } catch (e: Exception) {
             _failed.value = true
+            return null
         } finally {
             // 途中で失敗しても、引けた分は次に使う
             if (looked.isNotEmpty()) Store.saveCatalogLookups(looked, now)

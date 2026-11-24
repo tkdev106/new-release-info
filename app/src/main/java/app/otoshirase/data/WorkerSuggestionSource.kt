@@ -17,17 +17,18 @@ class WorkerSuggestionSource(
     private val auth: RequestAuth,
     private val http: OkHttpClient = defaultClient,
 ) : SuggestionSource {
-    @Serializable private data class Body(val artists: List<String>)
+    @Serializable private data class Body(val artists: List<String>, val exclude: List<String>)
     @Serializable private data class Resp(val suggestions: List<String> = emptyList())
 
-    override suspend fun suggest(likedArtists: List<String>): List<String> = withContext(Dispatchers.IO) {
-        val body = json.encodeToString(Body.serializer(), Body(likedArtists))
+    override suspend fun suggest(likedArtists: List<String>, exclude: List<String>): List<String> = withContext(Dispatchers.IO) {
+        val body = json.encodeToString(Body.serializer(), Body(likedArtists, exclude))
         val req = Request.Builder()
             .url(endpoint.trimEnd('/') + "/v1/suggestions")
             .apply { auth.headers(body).forEach { (k, v) -> header(k, v) } }
             .post(body.toRequestBody("application/json".toMediaType()))
             .build()
         http.newCall(req).execute().use { r ->
+            if (r.code == 451) throw SuggestionsUnavailableInRegion()
             if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
             // 形が崩れていたら SerializationException になり、呼び出し側で失敗として扱う
             json.decodeFromString(Resp.serializer(), r.body!!.string()).suggestions

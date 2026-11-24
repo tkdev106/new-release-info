@@ -64,8 +64,25 @@ object Store : StateStore {
     suspend fun saveSuggestions(list: List<Suggestion>, at: Long) = update { s ->
         // 確認している間に登録・興味なしにしたものは出さない
         val excluded = s.artists.map { it.id }.toSet() + s.dismissedSuggestions
-        s.copy(suggestions = list.filterNot { it.artistId in excluded }, suggestionsAt = at)
+        val kept = list.filterNot { it.artistId in excluded }
+        s.copy(
+            suggestions = kept,
+            suggestionsAt = at,
+            suggestionHistory = SuggestionSchedule.mergeHistory(kept, s.suggestionHistory),
+            // 取り直して一覧から消えた人の NEW は残さない
+            newSuggestions = s.newSuggestions.filter { id -> kept.any { it.artistId == id } },
+        )
     }
+
+    suspend fun markSuggestionsNew(ids: List<Long>) = update { s -> s.copy(newSuggestions = (ids + s.newSuggestions).distinct()) }
+
+    /** シートで見たので NEW を外す */
+    suspend fun clearNewSuggestions() = update { s -> if (s.newSuggestions.isEmpty()) s else s.copy(newSuggestions = emptyList()) }
+
+    suspend fun setSuggestionFrequency(f: SuggestionFrequency) =
+        update { s -> s.copy(suggestionFrequency = f, suggestionInviteDone = true) }
+
+    suspend fun closeSuggestionInvite() = update { s -> s.copy(suggestionInviteDone = true) }
 
     suspend fun saveCatalogLookups(found: Map<String, CatalogLookup>, now: Long) = update { s ->
         val merged = (s.catalogLookups + found)

@@ -66,6 +66,12 @@ import app.otoshirase.data.Release
 import app.otoshirase.data.ReleaseRules
 import app.otoshirase.data.Store
 import app.otoshirase.data.Suggestion
+import app.otoshirase.data.SuggestionFrequency
+import app.otoshirase.data.SuggestionSchedule
+import app.otoshirase.notify.Notifier
+import app.otoshirase.work.SuggestionWorker
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import app.otoshirase.widget.ReleaseWidget
 import app.otoshirase.work.CheckWorker
 import app.otoshirase.work.Checker
@@ -84,7 +90,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // 通知から開いたときは、その通知に関係する画面から始める
         val start = Tab.entries.firstOrNull { it.name == intent.getStringExtra(EXTRA_TAB) } ?: Tab.Releases
-        setContent { AppTheme { Root(start, ::askNotifications) } }
+        val openSuggestions = intent.getBooleanExtra(EXTRA_SUGGESTIONS, false)
+        setContent { AppTheme { Root(start, openSuggestions, ::askNotifications) } }
     }
 
     // 起動直後にいきなり求めても理由が伝わらないので、通知が要る場面になってから求める
@@ -96,6 +103,14 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val EXTRA_TAB = "tab"
+        private const val EXTRA_SUGGESTIONS = "suggestions"
+
+        /** おすすめの通知から開く。おすすめが見える検索シートを開いた状態で始める */
+        fun suggestionsIntent(ctx: android.content.Context): Intent =
+            Intent(ctx, MainActivity::class.java)
+                .putExtra(EXTRA_TAB, Tab.Artists.name)
+                .putExtra(EXTRA_SUGGESTIONS, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
 
         fun playsIntent(ctx: android.content.Context): Intent =
             Intent(ctx, MainActivity::class.java)
@@ -111,11 +126,13 @@ private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
 }
 
 @Composable
-private fun Root(start: Tab, askNotifications: () -> Unit) {
+private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> Unit) {
     val ctx = LocalContext.current
     val state by Store.state.collectAsState()
     var tab by rememberSaveable { mutableStateOf(start) }
-    var searchFor by remember { mutableStateOf<String?>(null) }
+    var searchFor by remember { mutableStateOf(if (openSuggestions) "" else null) }
+    // 通知から開いたときは、キーボードでおすすめが隠れないよう検索欄に入らない
+    var fromNotification by remember { mutableStateOf(openSuggestions) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -191,7 +208,15 @@ private fun Root(start: Tab, askNotifications: () -> Unit) {
     }
 
     searchFor?.let { initial ->
-        SearchSheet(initial, registered = state.artists.map { it.id }.toSet(), suggestions = state.suggestions, dismissed = state.dismissedSuggestions.toSet(), onDismiss = { searchFor = null })
+        SearchSheet(
+            initial, state, autoFocus = !fromNotification, askNotifications = askNotifications,
+            onDismiss = {
+                searchFor = null
+                fromNotification = false
+                // シートで見たので、通知で知らせた印は外す
+                App.scope.launch { Store.clearNewSuggestions() }
+            },
+        )
     }
 }
 
@@ -349,7 +374,7 @@ private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd:
 
 /** 頭文字の丸・名前・補足を並べた1行。アーティスト・よく聴く・検索結果で共通 */
 @Composable
-private fun PersonRow(name: String, detail: String?, image: String? = null, onClick: (() -> Unit)? = null, trailing: @Composable RowScope.() -> Unit) {
+private fun PersonRow(name: String, detail: String?, image: String? = null, onClick: (() -> Unit)? = null, badge: String? = null, trailing: @Composable RowScope.() -> Unit) {
     val c = MaterialTheme.colorScheme
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -360,7 +385,16 @@ private fun PersonRow(name: String, detail: String?, image: String? = null, onCl
         Monogram(name, image)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(name, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleMedium, color = c.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (badge != null) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        badge, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = c.onSecondaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(c.secondaryContainer).padding(horizontal = 6.dp, vertical = 1.dp),
+                    )
+                }
+            }
             if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant, maxLines = 1)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), content = trailing)
@@ -479,7 +513,10 @@ private fun listenerGranted(ctx: android.content.Context) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: List<Suggestion>, dismissed: Set<Long>, onDismiss: () -> Unit) {
+private fun SearchSheet(initial: String, state: AppState, autoFocus: Boolean, askNotifications: () -> Unit, onDismiss: () -> Unit) {
+    val registered = state.artists.map { it.id }.toSet()
+    val suggestions = state.suggestions
+    val dismissed = state.dismissedSuggestions.toSet()
     val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
     var query by remember { mutableStateOf(initial) }
@@ -507,13 +544,18 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             loading = false
         }
     }
-    LaunchedEffect(Unit) { if (initial.isBlank()) focus.requestFocus() }
+    LaunchedEffect(Unit) { if (initial.isBlank() && autoFocus) focus.requestFocus() }
 
     val refresher = App.suggestions
     val suggesting = refresher?.refreshing?.collectAsState()?.value == true
     val suggestFailed = refresher?.failed?.collectAsState()?.value == true
     // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
     val partial = refresher?.partial?.collectAsState()?.value
+    var choosingFrequency by remember { mutableStateOf(false) }
+    // 設定から戻ったときに出し直すため、画面に戻るたびに確かめる
+    var notifyAllowed by remember { mutableStateOf(Notifier.suggestionsAllowed(ctx)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notifyAllowed = Notifier.suggestionsAllowed(ctx) }
+    val frequency = state.suggestionFrequency
 
     val focusManager = LocalFocusManager.current
     fun add(id: Long, name: String, genre: String?, url: String?, alias: String?) {
@@ -585,13 +627,16 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 if (query.isBlank() && refresher != null) {
                     // 取り直し中の一覧は保存前なので、興味なしにしたものもここで除く
-                    val shown = (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added || it.artistId in dismissed }
+                    val shown = SuggestionSchedule.ordered(
+                        (partial ?: suggestions).filterNot { it.artistId in registered || it.artistId in added || it.artistId in dismissed },
+                        state.newSuggestions.toSet(),
+                    )
                     item(key = "suggestions_header") {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.weight(1f)) { SectionLabel(stringResource(R.string.suggestions)) }
-                            // 取得は押したときだけ。取得中は押せないようにする。
-                            // 候補がないときは ↻ だと何のボタンか分からないので、下に文字付きのボタンを出す
-                            if (shown.isNotEmpty()) IconButton(
+                            SuggestionBell(frequency, notifyAllowed) { choosingFrequency = true }
+                            // 取り直し中も同じ場所に残して押せなくする。消えると、下に別のボタンが急に出たように見える
+                            if (shown.isNotEmpty() || suggesting) IconButton(
                                 onClick = { App.scope.launch { refresher.refresh() } },
                                 enabled = !suggesting,
                             ) {
@@ -599,10 +644,18 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                             }
                         }
                     }
-                    if (shown.isEmpty()) item(key = "suggestions_empty") {
+                    if (frequency != SuggestionFrequency.Off) item(key = "suggestions_status") {
+                        if (notifyAllowed) Text(
+                            stringResource(frequency.statusText()), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp),
+                        ) else NotificationsBlocked { openNotificationSettings(ctx) }
+                    }
+                    // 「おすすめを探す」は、まだ取っていないときと、興味なしで全部外したときだけ。
+                    // 取り直し中は一覧が空になるが、そこで出すと押した直後に急に現れて見える
+                    if (shown.isEmpty() && !suggesting) item(key = "suggestions_empty") {
                         val note = when {
                             registered.isEmpty() -> R.string.suggestions_need_artists
-                            !suggesting && suggestFailed -> R.string.suggestions_error
+                            suggestFailed -> R.string.suggestions_error
                             else -> R.string.suggestions_hint
                         }
                         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
@@ -610,10 +663,7 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                             // 登録が無いうちは押しても何もできないので、ボタン自体を出さない
                             if (registered.isNotEmpty()) {
                                 Spacer(Modifier.height(10.dp))
-                                FilledTonalButton(
-                                    onClick = { App.scope.launch { refresher.refresh() } },
-                                    enabled = !suggesting,
-                                ) {
+                                FilledTonalButton(onClick = { App.scope.launch { refresher.refresh() } }) {
                                     Icon(painterResource(R.drawable.ic_sparkle), null, Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text(stringResource(R.string.suggestions_find))
@@ -621,12 +671,25 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
                             }
                         }
                     }
+                    val newIds = state.newSuggestions.toSet()
                     items(shown, key = { "s" + it.artistId }) { sg ->
-                        PersonRow(sg.name, sg.genre, image = artistImageById(sg.artistId)) {
+                        PersonRow(
+                            sg.name, sg.genre, image = artistImageById(sg.artistId),
+                            badge = if (sg.artistId in newIds) stringResource(R.string.suggestion_new) else null,
+                        ) {
                             IconButton(onClick = { dismiss(sg) }) {
                                 Icon(Icons.Default.Close, stringResource(R.string.not_interested), Modifier.size(18.dp), tint = c.onSurfaceVariant)
                             }
                             PillButton(stringResource(R.string.add)) { add(sg.artistId, sg.name, sg.genre, sg.url, null) }
+                        }
+                    }
+                    // 一度おすすめを見てから案内する。何が届くのか分かってから選べるように
+                    if (!state.suggestionInviteDone && frequency == SuggestionFrequency.Off && shown.isNotEmpty() && !suggesting) {
+                        item(key = "suggestions_invite") {
+                            SuggestionInvite(
+                                onLater = { App.scope.launch { Store.closeSuggestionInvite() } },
+                                onChoose = { choosingFrequency = true },
+                            )
                         }
                     }
                     if (suggesting) item(key = "suggesting") {
@@ -654,6 +717,125 @@ private fun SearchSheet(initial: String, registered: Set<Long>, suggestions: Lis
             SnackbarHost(snackbar)
         }
     }
+
+    if (choosingFrequency) FrequencyDialog(frequency, onDismiss = { choosingFrequency = false }) { picked ->
+        choosingFrequency = false
+        App.scope.launch { Store.setSuggestionFrequency(picked) }
+        SuggestionWorker.schedule(ctx, picked, changed = true)
+        // 通知が要る場面になったので、ここで許可を求める
+        if (picked != SuggestionFrequency.Off) askNotifications()
+    }
+}
+
+private fun SuggestionFrequency.statusText(): Int = when (this) {
+    SuggestionFrequency.Daily -> R.string.suggest_status_daily
+    SuggestionFrequency.Every3Days -> R.string.suggest_status_3days
+    else -> R.string.suggest_status_weekly
+}
+
+private fun SuggestionFrequency.label(): Int = when (this) {
+    SuggestionFrequency.Off -> R.string.suggest_freq_off
+    SuggestionFrequency.Daily -> R.string.suggest_freq_daily
+    SuggestionFrequency.Every3Days -> R.string.suggest_freq_3days
+    SuggestionFrequency.Weekly -> R.string.suggest_freq_weekly
+}
+
+/** オフは輪郭だけ、オンは塗りつぶし、選んだのに通知が届かないときは斜線 */
+@Composable
+private fun SuggestionBell(frequency: SuggestionFrequency, allowed: Boolean, onClick: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    val on = frequency != SuggestionFrequency.Off
+    IconButton(
+        onClick = onClick,
+        colors = if (on && allowed) IconButtonDefaults.iconButtonColors(containerColor = c.secondaryContainer, contentColor = c.onSecondaryContainer)
+        else IconButtonDefaults.iconButtonColors(),
+    ) {
+        val label = stringResource(R.string.suggest_bell)
+        when {
+            !on -> Icon(painterResource(R.drawable.ic_bell_outline), label, Modifier.size(20.dp))
+            allowed -> Icon(Icons.Default.Notifications, label, Modifier.size(20.dp))
+            else -> Icon(painterResource(R.drawable.ic_bell_off), label, Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun NotificationsBlocked(onOpenSettings: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp)).background(c.errorContainer)
+            .padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(R.string.suggest_blocked), Modifier.weight(1f).padding(vertical = 10.dp), style = MaterialTheme.typography.bodySmall, color = c.onErrorContainer)
+        TextButton(onClick = onOpenSettings, colors = ButtonDefaults.textButtonColors(contentColor = c.onErrorContainer)) {
+            Text(stringResource(R.string.open_settings))
+        }
+    }
+}
+
+@Composable
+private fun SuggestionInvite(onLater: () -> Unit, onChoose: () -> Unit) {
+    val c = MaterialTheme.colorScheme
+    Column(
+        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp).clip(RoundedCornerShape(16.dp)).background(c.surfaceContainer).padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(50)).background(c.secondaryContainer), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_bell_outline), null, Modifier.size(20.dp), tint = c.onSecondaryContainer)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.suggest_invite_title), style = MaterialTheme.typography.titleSmall, color = c.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.suggest_invite_body), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onLater) { Text(stringResource(R.string.suggest_invite_later)) }
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = onChoose) { Text(stringResource(R.string.suggest_invite_choose)) }
+        }
+    }
+}
+
+@Composable
+private fun FrequencyDialog(current: SuggestionFrequency, onDismiss: () -> Unit, onConfirm: (SuggestionFrequency) -> Unit) {
+    // オフのまま開いたときは、選びやすいよう毎週を選んだ状態で出す
+    var picked by remember { mutableStateOf(if (current == SuggestionFrequency.Off) SuggestionFrequency.Weekly else current) }
+    val c = MaterialTheme.colorScheme
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.suggest_freq_title)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.suggest_freq_body))
+                Spacer(Modifier.height(8.dp))
+                SuggestionFrequency.entries.forEach { f ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                            .selectable(selected = picked == f, onClick = { picked = f }, role = Role.RadioButton)
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = picked == f, onClick = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(f.label()), style = MaterialTheme.typography.bodyLarge, color = c.onSurface)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.suggest_freq_note), style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(picked) }) { Text(stringResource(android.R.string.ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/** このアプリの通知の設定画面。チャンネルだけオフのときも、ここから入れる */
+private fun openNotificationSettings(ctx: android.content.Context) {
+    val i = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
+    runCatching { ctx.startActivity(i) }
 }
 
 // ---------------- 共通 ----------------

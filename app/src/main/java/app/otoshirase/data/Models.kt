@@ -85,4 +85,14 @@ data class AppState(
     val dismissedSuggestions: List<Long> = emptyList(),
     /** 正規化した候補名 → カタログで引いた結果 */
     val catalogLookups: Map<String, CatalogLookup> = emptyMap(),
+    /** おすすめを裏で取り直して通知する頻度 */
+    val suggestionFrequency: SuggestionFrequency = SuggestionFrequency.Off,
+    /** これまでに出したおすすめ（新しい順）。中継に「これは除いて」と伝え、通知で同じ人を繰り返さないため */
+    val suggestionHistory: List<Suggestion> = emptyList(),
+    /** 通知で知らせ、まだ画面で見ていないおすすめの artistId。NEW を付けて上に並べる */
+    val newSuggestions: List<Long> = emptyList(),
+    /** 「新しいおすすめを通知で受け取る」の案内を閉じたか（頻度を選んだときも閉じる） */
+    val suggestionInviteDone: Boolean = false,
+    /** 中継に地域で断られた時刻。しばらく裏では問い合わせない */
+    val suggestionsRegionBlockedAt: Long = 0,
 )

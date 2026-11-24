@@ -96,4 +96,32 @@
     <string name="listener_disclosure_body">New Releases uses notification access only to see which song is playing in your music apps (the artist name and the app). It counts plays to show your most-played artists.\n\nIt does not read the content of your notifications. Play counts stay on this device and are never sent anywhere.</string>
     <string name="listener_disclosure_agree">Agree and continue</string>
     <string name="not_now">Not now</string>
+    <!-- AI のおすすめの通知 -->
+    <string name="suggest_bell">Suggestion notifications</string>
+    <string name="suggest_invite_title">Get new suggestions as notifications</string>
+    <string name="suggest_invite_body">We\'ll let you know when AI finds new artists based on the ones you\'ve added.</string>
+    <string name="suggest_invite_later">Not now</string>
+    <string name="suggest_invite_choose">Choose frequency</string>
+    <string name="suggest_freq_title">Suggestion notifications</string>
+    <string name="suggest_freq_body">Get notified when there are new suggestions.</string>
+    <string name="suggest_freq_note">Notifications may be skipped when suggestions can\'t be retrieved, for example due to a service issue.</string>
+    <string name="suggest_freq_off">Off</string>
+    <string name="suggest_freq_daily">Daily</string>
+    <string name="suggest_freq_3days">Every 3 days</string>
+    <string name="suggest_freq_weekly">Weekly</string>
+    <string name="suggest_status_daily">You\'ll get new suggestions daily.</string>
+    <string name="suggest_status_3days">You\'ll get new suggestions every 3 days.</string>
+    <string name="suggest_status_weekly">You\'ll get new suggestions weekly.</string>
+    <string name="suggest_blocked">Notifications are off, so suggestions can\'t be sent.</string>
+    <string name="open_settings">Open settings</string>
+    <string name="suggestion_new" translatable="false">NEW</string>
+    <string name="notif_channel_suggestions">AI suggestions</string>
+    <string name="notif_channel_suggestions_desc">New artists suggested by AI</string>
+    <plurals name="notif_suggest_many">
+        <item quantity="one">%d new suggestion</item>
+        <item quantity="other">%d new suggestions</item>
+    </plurals>
+    <string name="notif_suggest_one">New suggestion: %s</string>
+    <string name="notif_suggest_tap">Tap to see</string>
+    <string name="list_separator">", "</string>
 </resources>

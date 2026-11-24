@@ -6,9 +6,15 @@ import java.text.Normalizer
 
 /** おすすめの名前を出す側（Gemini の中継）。返す名前は実在の保証がない */
 interface SuggestionSource {
-    /** 通信や中継の失敗は例外で知らせる。呼び出し側が前回の結果を残せるように */
-    suspend fun suggest(likedArtists: List<String>): List<String>
+    /**
+     * 通信や中継の失敗は例外で知らせる。呼び出し側が前回の結果を残せるように。
+     * exclude は前に出した名前。定期の取り直しで同じ名前ばかり返さないために渡す
+     */
+    suspend fun suggest(likedArtists: List<String>, exclude: List<String> = emptyList()): List<String>
 }
+
+/** この地域では中継を使えない（Gemini 無料枠の規約のため中継が断っている） */
+class SuggestionsUnavailableInRegion : Exception()
 
 /** おすすめが実在するかを確かめる側（Apple のカタログ） */
 interface ArtistCatalog {
@@ -42,11 +48,13 @@ class SuggestionFinder(
         known: Map<String, CatalogLookup> = emptyMap(),
         /** 新しく問い合わせた結果。呼び出し側が保存する */
         onLookup: (String, CatalogLookup) -> Unit = { _, _ -> },
+        /** 前に出した名前。中継に除いてもらう */
+        exclude: List<String> = emptyList(),
         /** 1 件確かめるたびに、それまでに見つかった分を渡す。全部終わるのを待たずに出すため */
         onFound: (List<Suggestion>) -> Unit = {},
     ): List<Suggestion> {
         if (liked.isEmpty()) return emptyList()
-        val candidates = source.suggest(liked.map { it.name }.take(MAX_SENT))
+        val candidates = source.suggest(liked.map { it.name }.take(MAX_SENT), exclude)
 
         val excludedNames = (liked.flatMap { it.aliases + it.name } + ignored).map(::normalizeArtistName).toSet()
         val excludedIds = liked.map { it.id }.toSet() + dismissed

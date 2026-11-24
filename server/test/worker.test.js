@@ -63,7 +63,7 @@ test("トークンが違えば Gemini を呼ばずに断る", async () => {
 test("壊れた入力は Gemini を呼ばずに断る", async () => {
   assert.equal((await call("{")).status, 400);
   assert.equal((await call({ artists: [] })).status, 400);
-  assert.equal((await call("x".repeat(9000))).status, 413);
+  assert.equal((await call("x".repeat(17000))).status, 413);
   assert.equal(geminiCalls, 0);
 });
 

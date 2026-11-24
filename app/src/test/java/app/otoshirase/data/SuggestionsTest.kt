@@ -8,8 +8,10 @@ import java.io.IOException
 class SuggestionsTest {
     private class FakeSource(private val names: List<String>, private val fail: Boolean = false) : SuggestionSource {
         var sent: List<String>? = null
-        override suspend fun suggest(likedArtists: List<String>): List<String> {
+        var excluded: List<String>? = null
+        override suspend fun suggest(likedArtists: List<String>, exclude: List<String>): List<String> {
             sent = likedArtists
+            excluded = exclude
             if (fail) throw IOException("down")
             return names
         }
@@ -120,5 +122,12 @@ class SuggestionsTest {
         val source = FakeSource(emptyList())
         finder(source, FakeCatalog(emptyList())).find((1..40).map { artist(it.toLong(), "A$it") }, emptyList(), emptySet())
         assertEquals((1..30).map { "A$it" }, source.sent)
+    }
+
+    @Test
+    fun `前に出した名前を中継に除いてもらう`() = runBlocking {
+        val source = FakeSource(emptyList())
+        finder(source, FakeCatalog(emptyList())).find(liked, emptyList(), emptySet(), exclude = listOf("never young beach"))
+        assertEquals(listOf("never young beach"), source.excluded)
     }
 }
