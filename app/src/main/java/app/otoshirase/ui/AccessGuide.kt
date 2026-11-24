@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +25,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -204,10 +204,11 @@ private fun DetailScreen(hintSwitch: Boolean) {
             }
             Spacer(Modifier.width(20.dp))
             // 設定は見出しを 1 行に収めるので、長い言語では字を小さくして 1 行にする
-            BasicText(
-                sysString(R.string.guide_sys_listener_title), maxLines = 1,
-                style = TextStyle(color = c.onSurface),
-                autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = 22.sp),
+            var titleSize by remember { mutableStateOf(22.sp) }
+            Text(
+                sysString(R.string.guide_sys_listener_title), fontSize = titleSize, color = c.onSurface,
+                maxLines = 1, softWrap = false,
+                onTextLayout = { if (it.hasVisualOverflow && titleSize > 14.sp) titleSize *= 0.92f },
             )
         }
         Spacer(Modifier.height(36.dp))
