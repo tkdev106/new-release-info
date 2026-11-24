@@ -64,6 +64,30 @@ Content-Type: application/json
    ```
 5. アプリ側は `local.properties` に `play.cloudProjectNumber=<1 の番号>` を書いて Play 版を組み上げる
 
+## ログ（`src/log/`）
+
+本体と LLM の実装は `src/log/logger.js` の `Logger` の形（`info`・`warn`・`error`・`with`）だけを知っている。今は 1 件を 1 つの JSON にして console に出し、Cloudflare の **Workers Logs** が拾う（`wrangler.toml` の `[observability]`）。送り先を変えるときは `logger.js` に実装を足し、`createWorker({ logger })` に渡す。
+
+見る場所: Cloudflare のダッシュボード → Workers & Pages → `new-releases-suggest` → **Logs**。手元からは `npx wrangler tail --format json`。
+
+| `message` | いつ | 主なフィールド |
+| --- | --- | --- |
+| `request` | 呼び出し 1 回につき必ず 1 件 | `outcome`・`status`・`duration_ms`・`cache`（hit / miss）・`auth`（token / play_integrity）・`llm_provider`・`llm_ms`・`llm_candidates`・`suggestions_count`・`artists_count`・`exclude_count`・`quota_used`／`quota_limit`・`rate_limit`・`integrity_ms`／`integrity_reason`・`error` |
+| `llm_attempt` | LLM への HTTP 1 回ごと | `attempt`・`upstream_status`・`duration_ms`・`will_retry`・`prompt_tokens`・`output_tokens`・`finish_reason` |
+| `cache_put_failed` | キャッシュに書けなかったとき | `error` |
+
+どのログにも `request_id`（`cf-ray`）・`country`・`colo` が付く。`level` は 5xx が `error`、401・429 が `warn`、それ以外は `info`。
+
+`outcome` の値: `ok`・`empty`（LLM は答えたが残る名前が無い）・`region_blocked`・`rate_limited`・`body_too_large`・`unauthorized`・`integrity_unavailable`・`bad_request`・`daily_limit`・`llm_failed`・`not_configured`・`not_found`・`method_not_allowed`・`internal_error`。
+
+よく使う見方の例（Logs の Query Builder）:
+- 失敗の内訳: `message = request` で `outcome` ごとに件数
+- Gemini の遅さ: `message = llm_attempt` の `duration_ms` の P95
+- 1 日の上限の残り: `quota_used` の最大値（UTC で 0 に戻る）
+- キャッシュの効き: `cache` ごとの件数
+
+**残さないもの**: IP・トークン・Play Integrity のトークン・好きなアーティストの名前（件数だけ）・LLM のキー。Cloudflare が自動で付ける呼び出しのログも切っている（`invocation_logs = false`）。
+
 ## 初回のセットアップ（本人の作業）
 
 1. **Gemini の API キーを作る。** [Google AI Studio](https://aistudio.google.com/apikey) で、**課金を有効にしていない** Google Cloud プロジェクトにキーを作る。課金が無いので、使われすぎても無料枠が尽きるだけで請求は来ない

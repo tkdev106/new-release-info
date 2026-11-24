@@ -34,5 +34,13 @@ class_name = "DailyQuotaCounter"
 tag = "v1"
 new_sqlite_classes = ["DailyQuotaCounter"]
 
+# Workers Logs。src/log/logger.js が出す JSON のフィールド（outcome・status・duration_ms など）で検索・集計できる。
+# 呼び出しが少ないので全件を残す（無料プランは 1 日 20 万件・3 日保存まで。1 回の呼び出しで 1〜3 件）
 [observability]
 enabled = true
+head_sampling_rate = 1
+
+# Cloudflare が自動で付ける呼び出しのログ（URL・IP 由来の情報を含む）は使わず、自前の request ログに絞る
+[observability.logs]
+enabled = true
+invocation_logs = false

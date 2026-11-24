@@ -54,3 +54,22 @@ test("崩れた応答は例外にする", () => {
   assert.throws(() => parseResponse({}));
   assert.equal(parseResponse(wrap('{"other":1}')), undefined);
 });
+
+test("1 回ごとの上流の状態と使ったトークン数をログに残し、キーは残さない", async () => {
+  const logs = [];
+  const { createJsonLogger } = await import("../src/log/logger.js");
+  const p = createGeminiProvider({
+    apiKey: "very-secret-key",
+    model: "m",
+    logger: createJsonLogger({ write: (level, r) => logs.push({ level, ...r }) }),
+    fetchImpl: async () =>
+      reply({ ...wrap('{"suggestions":["A"]}'), usageMetadata: { promptTokenCount: 120, candidatesTokenCount: 30 } }),
+  });
+  await p.suggestArtists(buildPrompt(["羊文学"]));
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].message, "llm_attempt");
+  assert.equal(logs[0].llm_provider, "gemini:m");
+  assert.equal(logs[0].prompt_tokens, 120);
+  assert.equal(logs[0].output_tokens, 30);
+  assert.ok(!JSON.stringify(logs).includes("very-secret-key"));
+});
