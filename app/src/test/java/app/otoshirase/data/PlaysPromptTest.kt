@@ -74,4 +74,22 @@ class PlaysPromptTest {
         override fun canNotify() = allowed
         override fun showPlaysPrompt(artistName: String) { shown += artistName }
     }
+
+    @Test
+    fun `Most Playedは未登録を上に、登録済みを下に、どちらもよく聴く順に並べる`() {
+        val s = AppState(
+            artists = listOf(Artist(id = 1, name = "羊文学", aliases = listOf("Hitsujibungaku")), Artist(id = 2, name = "Vaundy")),
+            plays = listOf(
+                PlayStat("Hitsujibungaku", count = 5, lastPlayed = 100),
+                PlayStat("Vaundy", count = 9, lastPlayed = 100),
+                PlayStat("YOASOBI", count = 2, lastPlayed = 100),
+                PlayStat("Aimer", count = 2, lastPlayed = 300),
+                PlayStat("King Gnu", count = 7, lastPlayed = 100),
+            ),
+            ignored = listOf("King Gnu"),
+        )
+        val (unregistered, registered) = s.playSections()
+        assertEquals(listOf("Aimer", "YOASOBI"), unregistered.map { it.name })
+        assertEquals(listOf("Vaundy", "Hitsujibungaku"), registered.map { it.name })
+    }
 }

@@ -19,7 +19,9 @@
     <plurals name="artist_count">
         <item quantity="other">%d組のアーティスト</item>
     </plurals>
-    <string name="plays_subtitle">よく聴く未登録のアーティスト</string>
+    <string name="plays_subtitle">よく聴くアーティスト</string>
+    <string name="plays_section_unregistered">未登録</string>
+    <string name="plays_section_registered">登録済み</string>
 
     <string name="releases_empty">新しいリリースはまだありません</string>
     <string name="releases_empty_no_artists">アーティストを登録すると\n新譜がここに表示されます</string>
@@ -40,7 +42,6 @@
     <plurals name="play_count">
         <item quantity="other">%d回</item>
     </plurals>
-    <string name="hide">非表示</string>
 
     <string name="add">登録</string>
     <string name="added">登録済み</string>

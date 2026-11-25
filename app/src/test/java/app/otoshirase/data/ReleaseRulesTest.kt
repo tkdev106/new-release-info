@@ -44,4 +44,22 @@ class ReleaseRulesTest {
     fun `発売予定の作品にもNEWを付ける`() {
         assertTrue(ReleaseRules.isNew(today.plusDays(1), today))
     }
+
+    @Test
+    fun `開いた作品からはNEWを外す`() {
+        assertFalse(ReleaseRules.isNew(today.minusDays(3), today, openedOn = today.minusDays(1)))
+    }
+
+    @Test
+    fun `発売前に開いた作品は発売日を迎えたらもう一度NEWを付ける`() {
+        val date = today.plusDays(5)
+        assertFalse(ReleaseRules.isNew(date, today, openedOn = today))
+        assertTrue(ReleaseRules.isNew(date, date, openedOn = today))
+    }
+
+    @Test
+    fun `発売日以降に開いた作品には付け直さない`() {
+        val date = today.minusDays(2)
+        assertFalse(ReleaseRules.isNew(date, today, openedOn = date))
+    }
 }

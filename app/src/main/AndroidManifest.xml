@@ -35,6 +35,15 @@
             </intent-filter>
         </activity>
 
+        <!-- 新譜の通知を押したときの中継。開いた印を付けて音楽アプリへ渡す。履歴に残さず、アプリの画面も前に出さない -->
+        <activity
+            android:name=".notify.OpenReleaseActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay" />
+
         <!-- 再生中の曲（Apple Music / Spotify など）からアーティスト名を集計する -->
         <service
             android:name=".playback.NowPlayingService"

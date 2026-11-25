@@ -1,8 +1,16 @@
 package app.otoshirase.data
 
-/** Most Played に出す（まだ登録も非表示もしていない）アーティスト。画面と通知の判定で同じものを使う */
+/** まだ登録も非表示もしていない、聴いたアーティスト。Most Played の上の段と通知の判定で同じものを使う */
 fun AppState.unregisteredPlays(): List<PlayStat> =
     plays.filter { p -> p.name !in ignored && artists.none { it.matches(p.name) } }
+
+/** Most Played の並び。未登録を上の段、登録済みを下の段にし、どちらもよく聴く順（同じ回数なら最近聴いた順） */
+fun AppState.playSections(): Pair<List<PlayStat>, List<PlayStat>> {
+    val registered = plays.filter { p -> artists.any { it.matches(p.name) } }
+    return unregisteredPlays().sortedWith(PlayOrder) to registered.sortedWith(PlayOrder)
+}
+
+val PlayOrder: Comparator<PlayStat> = compareByDescending<PlayStat> { it.count }.thenByDescending { it.lastPlayed }
 
 /** 「新譜の通知を受け取りませんか？」を出す先。通知の仕組みに依存させず判定をテストするため */
 interface PlaysPromptNotifier {

@@ -34,6 +34,7 @@ data class Release(
     val foundAt: Long = System.currentTimeMillis(),
     val notified: Boolean = false, // 見つけたときに通知したか（登録時の取り込みと、発売済みであとから見つけたものは false）
     val releaseDayNotified: Boolean = false, // 発売予定だった作品の発売日に通知したか
+    val openedOn: String? = null, // 一覧か通知から最後に開いた日（yyyy-MM-dd）。開いた作品から NEW を外すため
 ) {
     val date: LocalDate? get() = releaseDate?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
     val upcoming: Boolean get() = date?.isAfter(LocalDate.now()) == true

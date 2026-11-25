@@ -17,7 +17,6 @@ import app.otoshirase.data.Suggestion
 import app.otoshirase.ui.MainActivity
 import app.otoshirase.ui.dateLabel
 import app.otoshirase.ui.kindLabel
-import app.otoshirase.ui.releaseIntent
 
 object Notifier {
     private const val CHANNEL = "releases"
@@ -109,7 +108,7 @@ object Notifier {
     }
 
     private fun openIntent(ctx: Context, r: Release): PendingIntent {
-        val i = releaseIntent(ctx, r) ?: Intent(ctx, MainActivity::class.java)
+        val i = Intent(ctx, OpenReleaseActivity::class.java).putExtra(OpenReleaseActivity.EXTRA_ID, r.id)
         return PendingIntent.getActivity(ctx, r.id.hashCode(), i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 

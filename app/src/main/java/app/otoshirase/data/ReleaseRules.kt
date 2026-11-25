@@ -13,7 +13,16 @@ object ReleaseRules {
      */
     fun notifyOnFind(date: LocalDate?, today: LocalDate): Boolean = date != null && !date.isBefore(today)
 
-    /** 一覧の NEW ラベル。発売予定と、発売から 1 か月以内のものに付ける */
-    fun isNew(date: LocalDate?, today: LocalDate): Boolean =
-        date != null && !date.isBefore(today.minusDays(NEW_LABEL_DAYS))
+    /**
+     * 一覧の NEW ラベル。発売予定と、発売から 1 か月以内のもののうち、まだ開いていないものに付ける。
+     * 発売前に開いた作品は発売日にもう一度付ける。発売日の通知と同じく、出たことに気づけるように
+     */
+    fun isNew(date: LocalDate?, today: LocalDate, openedOn: LocalDate? = null): Boolean {
+        if (date == null || date.isBefore(today.minusDays(NEW_LABEL_DAYS))) return false
+        if (openedOn == null) return true
+        return openedOn.isBefore(date) && !today.isBefore(date)
+    }
+
+    fun isNew(r: Release, today: LocalDate): Boolean =
+        isNew(r.date, today, r.openedOn?.let { runCatching { LocalDate.parse(it) }.getOrNull() })
 }
