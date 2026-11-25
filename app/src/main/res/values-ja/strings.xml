@@ -45,6 +45,7 @@
 
     <string name="add">登録</string>
     <string name="added">登録済み</string>
+    <string name="hide">非表示</string>
     <string name="search_hint">アーティスト名</string>
     <string name="search_clear">消去</string>
     <string name="search_error">検索できませんでした。ネットワークの接続を確認してください。</string>
