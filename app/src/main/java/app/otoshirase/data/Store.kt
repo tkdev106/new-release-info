@@ -106,10 +106,7 @@ object Store : StateStore {
         s.copy(suggestions = list, dismissedSuggestions = s.dismissedSuggestions - sg.artistId)
     }
 
-    /** 開いた作品から NEW を外す */
-    suspend fun markReleaseOpened(id: Long, today: java.time.LocalDate) = update { s ->
-        s.copy(releases = s.releases.map { if (it.id == id) it.copy(openedOn = today.toString()) else it })
-    }
+    suspend fun ignorePlay(name: String) = update { s -> s.copy(ignored = (s.ignored + name).distinct()) }
 
     /** 開いた作品から NEW を外す */
     suspend fun markReleaseOpened(id: Long, today: java.time.LocalDate) = update { s ->
