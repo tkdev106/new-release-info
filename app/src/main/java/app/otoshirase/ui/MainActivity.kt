@@ -203,7 +203,7 @@ private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> U
             when (tab) {
                 Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
                 Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
-                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it })
+                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
             }
         }
     }
@@ -410,7 +410,7 @@ private fun PersonRow(name: String, detail: String?, image: String? = null, onCl
 // ---------------- よく聴く ----------------
 
 @Composable
-private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit) {
+private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (String) -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     // その場で登録した行は画面を離れるまで上の段に「登録済み」で残し、間違えたらすぐ戻せるようにする。
@@ -462,6 +462,9 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit) {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                     }
                     else -> {
+                        IconButton(onClick = { onIgnore(p.name) }) {
+                            Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         PillButton(stringResource(R.string.add)) {
                             resolving += p.name
                             scope.launch {
