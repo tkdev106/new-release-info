@@ -60,7 +60,8 @@ import app.otoshirase.data.AppleCatalog
 import app.otoshirase.data.PlayArtistResolver
 import app.otoshirase.data.Artist
 import app.otoshirase.data.ArtistImages
-import app.otoshirase.data.unregisteredPlays
+import app.otoshirase.data.PlayOrder
+import app.otoshirase.data.playSections
 import app.otoshirase.data.PlayStat
 import app.otoshirase.data.Release
 import app.otoshirase.data.ReleaseRules
@@ -202,7 +203,7 @@ private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> U
             when (tab) {
                 Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
                 Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
-                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
+                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it })
             }
         }
     }
@@ -286,13 +287,18 @@ private fun ReleasesScreen(releases: List<Release>, hasArtists: Boolean, addArti
     LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
         if (upcoming.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.section_upcoming)) }
-            items(upcoming, key = { it.id }) { ReleaseRow(it) { open(ctx, releaseIntent(ctx, it)) } }
+            items(upcoming, key = { it.id }) { ReleaseRow(it) { openRelease(ctx, it) } }
         }
         if (out.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.section_recent)) }
-            items(out, key = { it.id }) { ReleaseRow(it) { open(ctx, releaseIntent(ctx, it)) } }
+            items(out, key = { it.id }) { ReleaseRow(it) { openRelease(ctx, it) } }
         }
     }
+}
+
+private fun openRelease(ctx: android.content.Context, r: Release) {
+    App.scope.launch { Store.markReleaseOpened(r.id, LocalDate.now()) }
+    open(ctx, releaseIntent(ctx, r))
 }
 
 @Composable
@@ -323,7 +329,7 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("${kindLabel(ctx, r.kind)} · ${shortDate(ctx, r)}", style = MaterialTheme.typography.bodySmall, color = c.onSurfaceVariant)
-                if (ReleaseRules.isNew(r.date, LocalDate.now())) {
+                if (ReleaseRules.isNew(r, LocalDate.now())) {
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.badge_new), style = MaterialTheme.typography.labelSmall, color = c.onPrimary,
@@ -404,16 +410,16 @@ private fun PersonRow(name: String, detail: String?, image: String? = null, onCl
 // ---------------- よく聴く ----------------
 
 @Composable
-private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (String) -> Unit) {
+private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    // その場で登録した行は一覧から消さずに「登録済み」で残し、間違えたらすぐ戻せるようにする
+    // その場で登録した行は画面を離れるまで上の段に「登録済み」で残し、間違えたらすぐ戻せるようにする。
+    // 押した行が下の段へ飛ぶと、何が起きたか分からない
     val added = remember { mutableStateMapOf<String, Long>() }
     val resolving = remember { mutableStateListOf<String>() }
-    val unregistered = state.unregisteredPlays()
-    // 保存順に頼らず、よく聴く順（同じ回数なら最近聴いた順）に並べる
-    val plays = state.plays.filter { it in unregistered || it.name in added }
-        .sortedWith(compareByDescending<PlayStat> { it.count }.thenByDescending { it.lastPlayed })
+    val (fresh, known) = state.playSections()
+    val (justAdded, registered) = known.partition { it.name in added }
+    val unregistered = (fresh + justAdded).sortedWith(PlayOrder)
     var granted by remember { mutableStateOf(listenerGranted(ctx)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { granted = listenerGranted(ctx) }
 
@@ -429,15 +435,16 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
         if (guide) AccessGuideSheet(onDismiss = { guide = false })
         return
     }
-    if (plays.isEmpty()) {
+    if (unregistered.isEmpty() && registered.isEmpty()) {
         Empty(stringResource(R.string.plays_empty), null)
         return
     }
-    LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
-        items(plays, key = { it.name }) { p ->
+    LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
+        if (unregistered.isNotEmpty()) item(key = "h_unregistered") { SectionLabel(stringResource(R.string.plays_section_unregistered)) }
+        items(unregistered, key = { "u" + it.name }) { p ->
             PersonRow(
-                p.name, "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}",
-                image = artistImageByName(p.name),
+                p.name, playDetail(p), image = artistImageByName(p.name),
+                badge = if (p.name in added) null else stringResource(R.string.badge_new),
             ) {
                 val id = added[p.name]
                 when {
@@ -455,9 +462,6 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                     }
                     else -> {
-                        IconButton(onClick = { onIgnore(p.name) }) {
-                            Icon(Icons.Default.Close, stringResource(R.string.hide), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
                         PillButton(stringResource(R.string.add)) {
                             resolving += p.name
                             scope.launch {
@@ -479,7 +483,17 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
                 }
             }
         }
+        if (registered.isNotEmpty()) item(key = "h_registered") { SectionLabel(stringResource(R.string.plays_section_registered)) }
+        items(registered, key = { "r" + it.name }) { p ->
+            PersonRow(p.name, playDetail(p), image = artistImageByName(p.name)) {}
+        }
     }
+}
+
+@Composable
+private fun playDetail(p: PlayStat): String {
+    val ctx = LocalContext.current
+    return "${pluralStringResource(R.plurals.play_count, p.count, p.count)} · ${agoLabel(ctx, p.lastPlayed)}"
 }
 
 @Composable
