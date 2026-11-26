@@ -45,6 +45,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
 import app.otoshirase.R
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -131,9 +133,10 @@ private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> U
     val ctx = LocalContext.current
     val state by Store.state.collectAsState()
     var tab by rememberSaveable { mutableStateOf(start) }
-    var searchFor by remember { mutableStateOf(if (openSuggestions) "" else null) }
+    // 端末を開閉すると画面が作り直されるので、検索を開いていることを覚えておく
+    var searchFor by rememberSaveable { mutableStateOf(if (openSuggestions) "" else null) }
     // 通知から開いたときは、キーボードでおすすめが隠れないよう検索欄に入らない
-    var fromNotification by remember { mutableStateOf(openSuggestions) }
+    var fromNotification by rememberSaveable { mutableStateOf(openSuggestions) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -165,45 +168,49 @@ private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> U
         if (info.state == WorkInfo.State.FAILED) snackbar.showSnackbar(ctx.getString(R.string.check_failed))
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            Header(
-                title = stringResource(tab.label),
-                subtitle = when (tab) {
-                    Tab.Releases -> if (checking) stringResource(R.string.checking) else checkedLabel(ctx, state.lastCheck)
-                    Tab.Artists -> pluralStringResource(R.plurals.artist_count, state.artists.size, state.artists.size)
-                    Tab.Plays -> stringResource(R.string.plays_subtitle)
-                },
-            ) {
-                when (tab) {
-                    Tab.Releases -> CircleButton(Icons.Default.Refresh, stringResource(R.string.check_now), enabled = !checking && state.artists.isNotEmpty()) {
-                        // 通信できないまま確認を始めると、つながるまで「確認中」のまま止まって見える
-                        if (online(ctx)) pending = CheckWorker.runNow(ctx)
-                        else scope.launch {
-                            snackbar.currentSnackbarData?.dismiss()
-                            snackbar.showSnackbar(ctx.getString(R.string.offline))
+    BoxWithConstraints {
+        CompositionLocalProvider(LocalGutter provides sideGutter(maxWidth)) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                snackbarHost = { SnackbarHost(snackbar) },
+                topBar = {
+                    Header(
+                        title = stringResource(tab.label),
+                        subtitle = when (tab) {
+                            Tab.Releases -> if (checking) stringResource(R.string.checking) else checkedLabel(ctx, state.lastCheck)
+                            Tab.Artists -> pluralStringResource(R.plurals.artist_count, state.artists.size, state.artists.size)
+                            Tab.Plays -> stringResource(R.string.plays_subtitle)
+                        },
+                    ) {
+                        when (tab) {
+                            Tab.Releases -> CircleButton(Icons.Default.Refresh, stringResource(R.string.check_now), enabled = !checking && state.artists.isNotEmpty()) {
+                                // 通信できないまま確認を始めると、つながるまで「確認中」のまま止まって見える
+                                if (online(ctx)) pending = CheckWorker.runNow(ctx)
+                                else scope.launch {
+                                    snackbar.currentSnackbarData?.dismiss()
+                                    snackbar.showSnackbar(ctx.getString(R.string.offline))
+                                }
+                            }
+                            Tab.Artists -> CircleButton(Icons.Default.Add, stringResource(R.string.add_artist)) { searchFor = "" }
+                            Tab.Plays -> {}
                         }
                     }
-                    Tab.Artists -> CircleButton(Icons.Default.Add, stringResource(R.string.add_artist)) { searchFor = "" }
-                    Tab.Plays -> {}
+                },
+                bottomBar = { TabBar(tab) { tab = it } },
+            ) { pad ->
+                Box(Modifier.padding(pad).fillMaxSize()) {
+                    if (checking && tab == Tab.Releases) {
+                        LinearProgressIndicator(
+                            Modifier.fillMaxWidth().height(1.dp),
+                            color = MaterialTheme.colorScheme.primary, trackColor = Color.Transparent,
+                        )
+                    }
+                    when (tab) {
+                        Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
+                        Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
+                        Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
+                    }
                 }
-            }
-        },
-        bottomBar = { TabBar(tab) { tab = it } },
-    ) { pad ->
-        Box(Modifier.padding(pad).fillMaxSize()) {
-            if (checking && tab == Tab.Releases) {
-                LinearProgressIndicator(
-                    Modifier.fillMaxWidth().height(1.dp),
-                    color = MaterialTheme.colorScheme.primary, trackColor = Color.Transparent,
-                )
-            }
-            when (tab) {
-                Tab.Releases -> ReleasesScreen(state.releases, hasArtists = state.artists.isNotEmpty()) { tab = Tab.Artists; searchFor = "" }
-                Tab.Artists -> ArtistsScreen(state.artists, state.releases) { searchFor = "" }
-                Tab.Plays -> PlaysScreen(state, onSearch = { searchFor = it }, onIgnore = { App.scope.launch { Store.ignorePlay(it) } })
             }
         }
     }
@@ -224,7 +231,8 @@ private fun Root(start: Tab, openSuggestions: Boolean, askNotifications: () -> U
 @Composable
 private fun Header(title: String, subtitle: String?, actions: @Composable RowScope.() -> Unit) {
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().padding(start = 24.dp, end = 16.dp, top = 24.dp, bottom = 16.dp),
+        Modifier.fillMaxWidth().statusBarsPadding()
+            .padding(start = LocalGutter.current, end = LocalGutter.current - 8.dp, top = 24.dp, bottom = 16.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
         Column(Modifier.weight(1f)) {
@@ -284,7 +292,7 @@ private fun ReleasesScreen(releases: List<Release>, hasArtists: Boolean, addArti
         return
     }
     val (upcoming, out) = releases.partition { it.upcoming }
-    LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = LocalGutter.current, end = LocalGutter.current, bottom = 16.dp)) {
         if (upcoming.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.section_upcoming)) }
             items(upcoming, key = { it.id }) { ReleaseRow(it) { openRelease(ctx, it) } }
@@ -346,34 +354,35 @@ private fun ReleaseRow(r: Release, onClick: () -> Unit) {
 @Composable
 private fun ArtistsScreen(artists: List<Artist>, releases: List<Release>, onAdd: () -> Unit) {
     val ctx = LocalContext.current
-    var confirm by remember { mutableStateOf<Artist?>(null) }
+    // 開閉で画面が作り直されても確認を出したままにする。Artist は Bundle に入らないので id で覚える
+    var confirmId by rememberSaveable { mutableStateOf<Long?>(null) }
     if (artists.isEmpty()) {
         Empty(stringResource(R.string.artists_empty), stringResource(R.string.add_artist) to onAdd)
         return
     }
-    LazyColumn(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = LocalGutter.current, vertical = 4.dp)) {
         items(artists.sortedBy { it.name.lowercase() }, key = { it.id }) { a ->
             // 画像が取れていないアーティストは、最新作のジャケットで代用する
             val image = a.image ?: releases.firstOrNull { it.artistId == a.id }?.artwork
             PersonRow(a.name, a.genre, image = image, onClick = { open(ctx, artistIntent(ctx, a)) }) {
-                IconButton(onClick = { confirm = a }) {
+                IconButton(onClick = { confirmId = a.id }) {
                     Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
     }
-    confirm?.let { a ->
+    artists.firstOrNull { it.id == confirmId }?.let { a ->
         AlertDialog(
-            onDismissRequest = { confirm = null },
+            onDismissRequest = { confirmId = null },
             title = { Text(stringResource(R.string.remove_title, a.name)) },
             text = { Text(stringResource(R.string.remove_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     App.scope.launch { Store.removeArtist(a.id); ReleaseWidget().updateAll(ctx) }
-                    confirm = null
+                    confirmId = null
                 }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.remove)) }
             },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmId = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -439,7 +448,7 @@ private fun PlaysScreen(state: AppState, onSearch: (String) -> Unit, onIgnore: (
         Empty(stringResource(R.string.plays_empty), null)
         return
     }
-    LazyColumn(contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = LocalGutter.current, end = LocalGutter.current, bottom = 16.dp)) {
         if (unregistered.isNotEmpty()) item(key = "h_unregistered") { SectionLabel(stringResource(R.string.plays_section_unregistered)) }
         items(unregistered, key = { "u" + it.name }) { p ->
             PersonRow(
@@ -520,7 +529,9 @@ private fun SearchSheet(initial: String, state: AppState, autoFocus: Boolean, as
     val dismissed = state.dismissedSuggestions.toSet()
     val ctx = LocalContext.current
     val c = MaterialTheme.colorScheme
-    var query by remember { mutableStateOf(initial) }
+    // カーソル位置ごと覚える。文字だけだと、開閉で作り直したあとカーソルが先頭に戻る
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(initial, TextRange(initial.length))) }
+    val query = field.text
     var results by remember { mutableStateOf<List<AppleCatalog.Item>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
@@ -545,14 +556,13 @@ private fun SearchSheet(initial: String, state: AppState, autoFocus: Boolean, as
             loading = false
         }
     }
-    LaunchedEffect(Unit) { if (initial.isBlank() && autoFocus) focus.requestFocus() }
 
     val refresher = App.suggestions
     val suggesting = refresher?.refreshing?.collectAsState()?.value == true
     val suggestFailed = refresher?.failed?.collectAsState()?.value == true
     // 取り直し中は、見つかった分から順に出す（前の結果とは混ぜない）
     val partial = refresher?.partial?.collectAsState()?.value
-    var choosingFrequency by remember { mutableStateOf(false) }
+    var choosingFrequency by rememberSaveable { mutableStateOf(false) }
     // 設定から戻ったときに出し直すため、画面に戻るたびに確かめる
     var notifyAllowed by remember { mutableStateOf(Notifier.suggestionsAllowed(ctx)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notifyAllowed = Notifier.suggestionsAllowed(ctx) }
@@ -604,7 +614,7 @@ private fun SearchSheet(initial: String, state: AppState, autoFocus: Boolean, as
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyLarge, color = c.onSurfaceVariant)
                     BasicTextField(
-                        value = query, onValueChange = { query = it }, singleLine = true,
+                        value = field, onValueChange = { field = it }, singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = c.onSurface),
                         cursorBrush = SolidColor(c.primary),
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -614,11 +624,13 @@ private fun SearchSheet(initial: String, state: AppState, autoFocus: Boolean, as
                     Spacer(Modifier.width(8.dp))
                     Icon(
                         Icons.Default.Close, stringResource(R.string.search_clear),
-                        Modifier.size(20.dp).clip(RoundedCornerShape(50)).clickable { query = ""; focus.requestFocus() },
+                        Modifier.size(20.dp).clip(RoundedCornerShape(50)).clickable { field = TextFieldValue(""); focus.requestFocus() },
                         tint = c.onSurfaceVariant,
                     )
                 }
             }
+            // シートの中身は別のウィンドウで遅れて組み立てられる。入力欄より先に呼ぶと、開閉で作り直したときに落ちるので、入力欄の後で呼ぶ
+            LaunchedEffect(Unit) { if (initial.isBlank() && autoFocus) focus.requestFocus() }
             Box(Modifier.fillMaxWidth().height(2.dp).padding(horizontal = 24.dp)) {
                 if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().height(1.dp), color = c.primary, trackColor = Color.Transparent)
             }
@@ -871,7 +883,7 @@ private fun Empty(message: String, action: Pair<String, () -> Unit>?, title: Str
             Spacer(Modifier.height(8.dp))
         }
         Text(
-            message, textAlign = TextAlign.Center,
+            message, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = ContentMaxWidth),
             style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         action?.let { (label, onClick) ->
